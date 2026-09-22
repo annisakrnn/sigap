@@ -230,9 +230,9 @@ require_once __DIR__ . '/../includes/header.php';
                                 <td style="font-size:0.8rem;color:var(--text-muted);"><?= htmlspecialchars($d['keterangan'] ?? '-') ?></td>
                                 <td>
                                     <?php if (!empty($d['foto_temuan'])): ?>
-                                        <a href="<?= base_url('uploads/foto_temuan/' . htmlspecialchars($d['foto_temuan'])) ?>" target="_blank">
+                                        <a href="<?= base_url('uploads/foto_temuan/' . htmlspecialchars($d['foto_temuan'])) ?>" target="_blank" onclick="event.preventDefault(); previewFoto('<?= base_url('uploads/foto_temuan/' . htmlspecialchars($d['foto_temuan'])) ?>', 'Temuan: <?= addslashes(htmlspecialchars($d['nama_barang_snapshot'])) ?>');">
                                             <img src="<?= base_url('uploads/foto_temuan/' . htmlspecialchars($d['foto_temuan'])) ?>"
-                                                style="width:44px;height:44px;object-fit:cover;border-radius:4px;border:2px solid #ef4444;">
+                                                style="width:44px;height:44px;object-fit:cover;border-radius:4px;border:2px solid #ef4444;cursor:pointer;" title="Klik untuk memperbesar">
                                         </a>
                                     <?php else: ?>
                                         <span style="color:var(--text-muted);font-size:0.75rem;">–</span>
@@ -258,29 +258,30 @@ require_once __DIR__ . '/../includes/header.php';
 
     <form method="POST" action="proses.php" id="formApproval">
         <input type="hidden" name="gelar_alat_id" value="<?= $id ?>">
+        <input type="hidden" name="action" id="actionField" value="">
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Nama Pejabat Penandatangan <span style="color:var(--danger);">*</span></label>
-                <input type="text" name="nama_pejabat" class="form-control" 
+                <input type="text" name="nama_pejabat" id="namaPejabat" class="form-control" 
                     value="<?= htmlspecialchars($user['nama_lengkap']) ?>" required>
             </div>
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Jabatan Penandatangan <span style="color:var(--danger);">*</span></label>
-                <input type="text" name="jabatan_pejabat" class="form-control"
+                <input type="text" name="jabatan_pejabat" id="jabatanPejabat" class="form-control"
                     value="<?= htmlspecialchars($user['jabatan']) ?>" required>
             </div>
         </div>
 
         <div class="form-group">
-            <label class="form-label">Catatan Evaluasi K3 / Arahan Manajemen</label>
-            <textarea name="catatan_manajemen" class="form-control" rows="3"
-                placeholder="Isi catatan evaluasi, arahan perbaikan, atau persetujuan terhadap hasil inspeksi gelar alat..."></textarea>
+            <label class="form-label" for="catatanManajemen">Catatan Evaluasi K3 / Arahan Manajemen <span id="labelCatatanWajib" style="color:var(--danger);display:none;">* (Wajib jika menolak)</span></label>
+            <textarea name="catatan_manajemen" id="catatanManajemen" class="form-control" rows="3"
+                placeholder="Isi catatan evaluasi, arahan perbaikan jika menolak/revisi, atau apresiasi pelaksanaan gelar alat..."></textarea>
         </div>
 
         <div class="form-group">
             <label class="form-label">Tanda Tangan Digital Manajemen Atasan <span style="color:var(--danger);">*</span></label>
-            <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;">Tanda tangani di bawah ini sebagai bukti pengesahan Berita Acara Gelar Alat.</p>
+            <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;">Tanda tangani di bawah ini sebagai bukti persetujuan & pengesahan Berita Acara Gelar Alat.</p>
             <div class="signature-wrapper">
                 <canvas class="signature-canvas" id="canvasManajemen"></canvas>
             </div>
@@ -292,11 +293,11 @@ require_once __DIR__ . '/../includes/header.php';
             <input type="hidden" name="ttd_manajemen" id="ttdManajemen">
         </div>
 
-        <div style="display:flex;gap:12px;justify-content:flex-end;padding-top:1rem;border-top:1px solid var(--border-color);">
-            <button type="submit" name="action" value="reject" class="btn btn-danger">
+        <div style="display:flex;gap:12px;justify-content:flex-end;padding-top:1rem;border-top:1px solid var(--border-color);flex-wrap:wrap;">
+            <button type="button" onclick="submitDecision('reject')" id="btnReject" class="btn btn-danger">
                 <i class="fa-solid fa-times-circle"></i> Tolak & Kembalikan untuk Revisi
             </button>
-            <button type="submit" name="action" value="approve" id="btnApprove" class="btn btn-success btn-lg">
+            <button type="button" onclick="submitDecision('approve')" id="btnApprove" class="btn btn-success btn-lg">
                 <i class="fa-solid fa-check-circle"></i> Setujui & Sahkan Berita Acara
             </button>
         </div>
@@ -309,21 +310,50 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearBtn = document.getElementById('clearManajemen');
     const hiddenInput = document.getElementById('ttdManajemen');
     window.sigPadMgmt = new SimpleSignaturePad(canvas, clearBtn, hiddenInput);
-
-    document.getElementById('formApproval').addEventListener('submit', function(e) {
-        const action = document.activeElement.value;
-        if (action === 'approve') {
-            if (window.sigPadMgmt && window.sigPadMgmt.isEmpty()) {
-                e.preventDefault();
-                alert('Tanda tangan digital Manajemen Atasan belum diisi.\nSilakan tanda tangan pada kolom yang tersedia.');
-                return;
-            }
-        }
-        const btn = document.getElementById('btnApprove');
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
-        btn.disabled = true;
-    });
 });
+
+function submitDecision(action) {
+    const actionField = document.getElementById('actionField');
+    const namaPejabat = document.getElementById('namaPejabat').value.trim();
+    const jabatanPejabat = document.getElementById('jabatanPejabat').value.trim();
+    const catatan = document.getElementById('catatanManajemen').value.trim();
+
+    if (!namaPejabat || !jabatanPejabat) {
+        alert('Nama dan Jabatan Pejabat Penandatangan wajib diisi.');
+        return;
+    }
+
+    if (action === 'reject') {
+        if (!catatan) {
+            document.getElementById('labelCatatanWajib').style.display = 'inline';
+            alert('Mohon isi "Catatan Evaluasi K3 / Arahan Manajemen" terlebih dahulu untuk menjelaskan bagian yang perlu direvisi oleh petugas.');
+            document.getElementById('catatanManajemen').focus();
+            return;
+        }
+        if (!confirm('Apakah Anda yakin ingin MENOLAK dokumen ini dan mengembalikannya ke petugas untuk perbaikan?')) {
+            return;
+        }
+        actionField.value = 'reject';
+        const btn = document.getElementById('btnReject');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengembalikan...';
+        btn.style.pointerEvents = 'none';
+        document.getElementById('formApproval').submit();
+    } else if (action === 'approve') {
+        if (window.sigPadMgmt && window.sigPadMgmt.isEmpty()) {
+            alert('Tanda tangan digital Manajemen Atasan belum diisi.\nSilakan tanda tangan pada area canvas yang disediakan.');
+            return;
+        }
+        window.sigPadMgmt.updateInput();
+        if (!confirm('Apakah Anda yakin ingin MENYETUJUI dan MENGESAHKAN Berita Acara Gelar Alat ini? Dokumen resmi akan langsung dapat dicetak.')) {
+            return;
+        }
+        actionField.value = 'approve';
+        const btn = document.getElementById('btnApprove');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengesahkan...';
+        btn.style.pointerEvents = 'none';
+        document.getElementById('formApproval').submit();
+    }
+}
 </script>
 
 <?php elseif ($header['status'] === 'approved' && !empty($header['ttd_manajemen'])): ?>
@@ -345,16 +375,57 @@ document.addEventListener('DOMContentLoaded', function() {
             <div style="font-size:0.85rem;color:var(--text-muted);"><?= htmlspecialchars($header['jabatan_manajemen'] ?? '-') ?></div>
             <?php if ($header['catatan_manajemen']): ?>
                 <div style="margin-top:8px;font-size:0.825rem;padding:8px;background:rgba(255,255,255,0.6);border-radius:6px;border-left:3px solid #10b981;">
+                    <strong>Catatan Atasan:</strong><br>
                     <?= nl2br(htmlspecialchars($header['catatan_manajemen'])) ?>
                 </div>
             <?php endif; ?>
         </div>
         <div>
-            <div style="font-size:0.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Tanda Tangan:</div>
+            <div style="font-size:0.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Tanda Tangan Atasan:</div>
             <img src="<?= htmlspecialchars($header['ttd_manajemen']) ?>" style="max-width:200px;border:1px solid #a7f3d0;border-radius:6px;background:white;padding:4px;">
         </div>
     </div>
 </div>
+
+<?php elseif ($header['status'] === 'rejected'): ?>
+<!-- Tampilkan Status REJECTED -->
+<div class="card" style="border:1px solid #fecaca;background:#fef2f2;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem;">
+        <div style="width:42px;height:42px;background:#ef4444;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:white;font-size:1.2rem;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+            <div style="font-weight:700;color:#991b1b;font-size:1.05rem;">Laporan Dikembalikan untuk Perbaikan (Rejected)</div>
+            <div style="font-size:0.8rem;color:#b91c1c;"><?= date('d F Y, H:i', strtotime($header['tanggal_approval'] ?? $header['updated_at'])) ?></div>
+        </div>
+    </div>
+    <div>
+        <div style="font-size:0.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Catatan Arahan Perbaikan dari Manajemen:</div>
+        <div style="font-size:0.875rem;padding:10px 14px;background:#fff;border-radius:6px;border-left:3px solid #ef4444;color:#7f1d1d;">
+            <?= nl2br(htmlspecialchars($header['catatan_manajemen'] ?? 'Tidak ada catatan khusus.')) ?>
+        </div>
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-top:8px;">
+            Menunggu petugas pemeriksa melakukan revisi data dan submit ulang dokumen ini.
+        </p>
+    </div>
+</div>
 <?php endif; ?>
+
+<!-- Modal Preview Foto Temuan -->
+<div id="modalPreviewReview" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(15,23,42,0.8); backdrop-filter:blur(4px); align-items:center; justify-content:center; cursor:pointer;" onclick="this.style.display='none'">
+    <div style="background:#ffffff; padding:12px; border-radius:var(--radius-lg); max-width:550px; width:90%; text-align:center;" onclick="event.stopPropagation()">
+        <img id="reviewPreviewImg" src="" style="max-width:100%; max-height:75vh; border-radius:var(--radius-sm); object-fit:contain;">
+        <div id="reviewPreviewCaption" style="font-weight:600; margin-top:10px; color:var(--text-main); font-size:0.9rem;"></div>
+        <button onclick="document.getElementById('modalPreviewReview').style.display='none'" class="btn btn-outline btn-sm" style="margin-top:10px;">Tutup</button>
+    </div>
+</div>
+
+<script>
+function previewFoto(src, caption) {
+    document.getElementById('reviewPreviewImg').src = src;
+    document.getElementById('reviewPreviewCaption').textContent = caption;
+    document.getElementById('modalPreviewReview').style.display = 'flex';
+}
+</script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

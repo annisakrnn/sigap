@@ -177,20 +177,25 @@ require_once __DIR__ . '/../includes/header.php';
                                 <span class="badge badge-<?= $row['status'] ?>" style="font-size:0.68rem;"><?= strtoupper($row['status']) ?></span>
                             </td>
                             <td style="text-align:center; white-space:nowrap;">
-                                <?php if ($user['role'] === 'manajemen' && $row['status'] === 'submitted'): ?>
-                                    <a href="<?= base_url('approval/review.php?id=' . $row['id']) ?>" class="btn btn-primary btn-sm">
-                                        <i class="fa-solid fa-signature"></i> Setujui
-                                    </a>
-                                <?php else: ?>
+                                <div style="display:inline-flex; gap:6px;">
+                                    <?php if ($user['role'] === 'manajemen' && $row['status'] === 'submitted'): ?>
+                                        <a href="<?= base_url('approval/review.php?id=' . $row['id']) ?>" class="btn btn-primary btn-sm">
+                                            <i class="fa-solid fa-signature"></i> Review
+                                        </a>
+                                    <?php elseif ($user['role'] === 'petugas' && in_array($row['status'], ['rejected', 'draft'])): ?>
+                                        <a href="<?= base_url('inspeksi/form.php?edit_id=' . $row['id']) ?>" class="btn btn-warning btn-sm" title="Revisi / Edit Data">
+                                            <i class="fa-solid fa-pen-to-square"></i> <?= $row['status'] === 'rejected' ? 'Revisi' : 'Lanjut' ?>
+                                        </a>
+                                    <?php endif; ?>
                                     <a href="<?= base_url('riwayat/detail.php?id=' . $row['id']) ?>" class="btn btn-outline btn-sm">
                                         <i class="fa-solid fa-eye"></i> Detail
                                     </a>
-                                <?php endif; ?>
-                                <?php if ($row['status'] === 'approved'): ?>
-                                    <a href="<?= base_url('cetak/berita_acara.php?id=' . $row['id']) ?>" target="_blank" class="btn btn-outline btn-sm" title="Cetak PDF">
-                                        <i class="fa-solid fa-print"></i>
-                                    </a>
-                                <?php endif; ?>
+                                    <?php if ($row['status'] === 'approved'): ?>
+                                        <a href="<?= base_url('cetak/berita_acara.php?id=' . $row['id']) ?>" target="_blank" class="btn btn-outline btn-sm" title="Cetak Berita Acara PDF">
+                                            <i class="fa-solid fa-print"></i>
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>

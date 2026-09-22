@@ -23,7 +23,7 @@ if (!$gelar_alat_id || !in_array($action, ['approve', 'reject'])) {
 }
 
 // Verifikasi dokumen ada dan statusnya submitted
-$stmt_check = $pdo->prepare("SELECT id, status FROM gelar_alat_header WHERE id = :id AND status = 'submitted' LIMIT 1");
+$stmt_check = $pdo->prepare("SELECT id, status, petugas_id, nomor_dokumen, jenis_pekerjaan FROM gelar_alat_header WHERE id = :id AND status = 'submitted' LIMIT 1");
 $stmt_check->execute([':id' => $gelar_alat_id]);
 $doc = $stmt_check->fetch();
 
@@ -44,8 +44,15 @@ if ($action === 'approve') {
     $jabatan_pejabat = trim($_POST['jabatan_pejabat'] ?? $user['jabatan']);
     $catatan = trim($_POST['catatan_manajemen'] ?? '') ?: null;
 
+    // Pastikan nomor dokumen ada
+    $nomor_dokumen = $doc['nomor_dokumen'];
+    if (empty($nomor_dokumen)) {
+        $nomor_dokumen = 'GA/' . strtoupper($doc['jenis_pekerjaan']) . '/' . date('Ym') . '/' . str_pad($gelar_alat_id, 4, '0', STR_PAD_LEFT);
+    }
+
     $stmt_update = $pdo->prepare("
         UPDATE gelar_alat_header SET
+            nomor_dokumen = :no_dok,
             status = 'approved',
             ttd_manajemen = :ttd,
             manajemen_id = :mid,
@@ -56,6 +63,7 @@ if ($action === 'approve') {
         WHERE id = :id
     ");
     $stmt_update->execute([
+        ':no_dok'       => $nomor_dokumen,
         ':ttd'          => $ttd,
         ':mid'          => $user['id'],
         ':nama_pejabat' => $nama_pejabat,
@@ -64,7 +72,23 @@ if ($action === 'approve') {
         ':id'           => $gelar_alat_id
     ]);
 
-    set_flash('success', "Berita Acara Gelar Alat telah berhasil <strong>disahkan & ditandatangani</strong>. Dokumen resmi siap dicetak.");
+    // Kirim notifikasi ke petugas pemeriksa
+    try {
+        $stmt_notif = $pdo->prepare("
+            INSERT INTO notifikasi (user_id, judul, pesan, tipe, url_aksi)
+            VALUES (:uid, :judul, :pesan, 'sukses', :url)
+        ");
+        $stmt_notif->execute([
+            ':uid'   => $doc['petugas_id'],
+            ':judul' => "Berita Acara Disahkan: " . $nomor_dokumen,
+            ':pesan' => "Laporan gelar alat Anda telah disahkan dan ditandatangani oleh {$nama_pejabat} ({$jabatan_pejabat}).",
+            ':url'   => 'riwayat/detail.php?id=' . $gelar_alat_id
+        ]);
+    } catch (Exception $e) {
+        // Fallback aman jika tabel notifikasi belum ada
+    }
+
+    set_flash('success', "Berita Acara Gelar Alat <strong>{$nomor_dokumen}</strong> telah berhasil <strong>disahkan & ditandatangani</strong>. Dokumen resmi siap dicetak.");
     header("Location: review.php?id=" . $gelar_alat_id); exit;
 
 } elseif ($action === 'reject') {
@@ -91,6 +115,22 @@ if ($action === 'approve') {
         ':id'           => $gelar_alat_id
     ]);
 
-    set_flash('warning', "Laporan dikembalikan ke petugas pemeriksa untuk <strong>revisi / perbaikan</strong>. Catatan: {$catatan_reject}");
-    header("Location: ../dashboard/index.php"); exit;
+    // Kirim notifikasi ke petugas pemeriksa
+    try {
+        $stmt_notif = $pdo->prepare("
+            INSERT INTO notifikasi (user_id, judul, pesan, tipe, url_aksi)
+            VALUES (:uid, :judul, :pesan, 'peringatan', :url)
+        ");
+        $stmt_notif->execute([
+            ':uid'   => $doc['petugas_id'],
+            ':judul' => "Laporan Dikembalikan untuk Revisi: " . ($doc['nomor_dokumen'] ?? 'Dokumen #' . $gelar_alat_id),
+            ':pesan' => "Catatan Manajemen: {$catatan_reject}",
+            ':url'   => 'riwayat/detail.php?id=' . $gelar_alat_id
+        ]);
+    } catch (Exception $e) {
+        // Fallback aman
+    }
+
+    set_flash('warning', "Laporan dikembalikan ke petugas pemeriksa untuk <strong>revisi / perbaikan</strong>. Catatan arahan: <em>" . htmlspecialchars($catatan_reject) . "</em>");
+    header("Location: review.php?id=" . $gelar_alat_id); exit;
 }

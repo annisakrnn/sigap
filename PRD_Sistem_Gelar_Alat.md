@@ -342,7 +342,9 @@ Berikut ringkasan daftar alat yang diambil langsung dari dokumen fisik:
 | `petugas_yandal` | Ropiko (Pelaksana Yandal) | Petugas Pelaksana Yandal ULP Balong |
 | `petugas_p2tl` | Sayitno (Pelaksana P2TL) | Pelaksana Lapangan PT Citacontrac |
 | `petugas_har` | Ahmad Fauzi (Pelaksana HAR) | Pelaksana Pemeliharaan Distribusi |
-| `petugas_sr` | Budi Santoso (Pelaksana SR APP) | Pelaksana Penyambungan SR APP 1 Phasa |
+| `petugas_sr` | Budi Santoso (Pelaksana SR APP) | Pelaksana Penyambun
+
+gan SR APP 1 Phasa |
 
 ### 🏢 Role: Manajemen Atasan
 

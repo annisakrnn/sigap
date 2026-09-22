@@ -84,16 +84,52 @@ require_once __DIR__ . '/../includes/header.php';
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <?php if ($user['role'] === 'manajemen' && $header['status'] === 'submitted'): ?>
             <a href="<?= base_url('approval/review.php?id=' . $id) ?>" class="btn btn-primary">
-                <i class="fa-solid fa-signature"></i> Review & Setujui
+                <i class="fa-solid fa-signature"></i> Review & Berikan Persetujuan
+            </a>
+        <?php endif; ?>
+        <?php if ($user['role'] === 'petugas' && in_array($header['status'], ['rejected', 'draft'])): ?>
+            <a href="<?= base_url('inspeksi/form.php?edit_id=' . $id) ?>" class="btn btn-warning">
+                <i class="fa-solid fa-pen-to-square"></i> <?= $header['status'] === 'rejected' ? 'Revisi / Perbaiki Laporan Ini' : 'Lanjutkan Isi Draft' ?>
             </a>
         <?php endif; ?>
         <?php if ($header['status'] === 'approved'): ?>
             <a href="<?= base_url('cetak/berita_acara.php?id=' . $id) ?>" target="_blank" class="btn btn-success">
-                <i class="fa-solid fa-print"></i> Cetak Berita Acara Resmi
+                <i class="fa-solid fa-print"></i> Cetak Berita Acara Resmi (PDF)
             </a>
         <?php endif; ?>
     </div>
 </div>
+
+<?php if ($header['status'] === 'rejected'): ?>
+    <div class="card" style="border:2px solid #ef4444; background:#fef2f2; margin-bottom:1.25rem; padding:1.25rem 1.5rem;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+            <div style="width:42px; height:42px; border-radius:50%; background:#ef4444; color:white; display:flex; align-items:center; justify-content:center; font-size:1.25rem;">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h3 style="font-size:1.05rem; font-weight:700; color:#991b1b; margin:0;">
+                    Laporan Perlu Perbaikan (Dikembalikan oleh Manajemen)
+                </h3>
+                <p style="font-size:0.825rem; color:#b91c1c; margin:2px 0 0;">
+                    Atasan telah mengembalikan dokumen ini dengan catatan perbaikan di bawah.
+                </p>
+            </div>
+        </div>
+        <div style="background:#fff; border-radius:6px; padding:10px 14px; border-left:4px solid #ef4444; margin:10px 0;">
+            <strong style="font-size:0.8rem; text-transform:uppercase; color:#7f1d1d;">Catatan Arahan Manajemen:</strong>
+            <p style="margin:4px 0 0; font-size:0.9rem; color:#1e293b;">
+                <?= nl2br(htmlspecialchars($header['catatan_manajemen'] ?? 'Tidak ada catatan khusus.')) ?>
+            </p>
+        </div>
+        <?php if ($user['role'] === 'petugas'): ?>
+            <div style="text-align:right; margin-top:10px;">
+                <a href="<?= base_url('inspeksi/form.php?edit_id=' . $id) ?>" class="btn btn-primary" style="background:#dc2626; border-color:#dc2626;">
+                    <i class="fa-solid fa-pen-to-square"></i> Buka Form untuk Revisi Sekarang &rarr;
+                </a>
+            </div>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
 
 <!-- Info Dokumen -->
 <div class="card" style="margin-bottom:1.25rem;">

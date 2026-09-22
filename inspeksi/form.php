@@ -11,13 +11,43 @@ if (!$pdo) { header("Location: ../setup.php"); exit; }
 
 $user = get_logged_user();
 
-// Validasi parameter GET
-$jenis_pekerjaan = in_array($_GET['jenis'] ?? '', ['p2tl','sr_app','yandal','har']) ? $_GET['jenis'] : null;
-$regu_id = intval($_GET['regu_id'] ?? 0);
+// Cek mode edit / revisi
+$edit_id = intval($_GET['edit_id'] ?? 0);
+$edit_header = null;
+$existing_details_map = [];
 
-if (!$jenis_pekerjaan || !$regu_id) {
-    set_flash('error', "Parameter tidak valid. Silakan pilih jenis gelar alat terlebih dahulu.");
-    header("Location: index.php"); exit;
+if ($edit_id > 0) {
+    $stmt_edit = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id AND petugas_id = :uid LIMIT 1");
+    $stmt_edit->execute([':id' => $edit_id, ':uid' => $user['id']]);
+    $edit_header = $stmt_edit->fetch();
+
+    if (!$edit_header) {
+        set_flash('error', "Dokumen tidak ditemukan atau Anda tidak memiliki akses ke dokumen ini.");
+        header("Location: index.php"); exit;
+    }
+
+    if (!in_array($edit_header['status'], ['draft', 'rejected'])) {
+        set_flash('warning', "Dokumen ini berstatus " . strtoupper($edit_header['status']) . " dan tidak dapat diubah.");
+        header("Location: " . base_url('riwayat/detail.php?id=' . $edit_id)); exit;
+    }
+
+    $jenis_pekerjaan = $edit_header['jenis_pekerjaan'];
+    $regu_id = (int)$edit_header['regu_id'];
+
+    $stmt_d_ex = $pdo->prepare("SELECT * FROM gelar_alat_detail WHERE gelar_alat_id = :id");
+    $stmt_d_ex->execute([':id' => $edit_id]);
+    foreach ($stmt_d_ex->fetchAll() as $d_row) {
+        $existing_details_map[$d_row['master_barang_id']] = $d_row;
+    }
+} else {
+    // Validasi parameter GET biasa
+    $jenis_pekerjaan = in_array($_GET['jenis'] ?? '', ['p2tl','sr_app','yandal','har']) ? $_GET['jenis'] : null;
+    $regu_id = intval($_GET['regu_id'] ?? 0);
+
+    if (!$jenis_pekerjaan || !$regu_id) {
+        set_flash('error', "Parameter tidak valid. Silakan pilih jenis gelar alat terlebih dahulu.");
+        header("Location: index.php"); exit;
+    }
 }
 
 // Ambil data regu
@@ -60,28 +90,56 @@ $jenis_label = [
     'har'    => 'HAR - Pemeliharaan Jaringan Distribusi',
 ];
 
-$page_title = "Form Gelar Alat " . strtoupper($jenis_pekerjaan);
+$page_title = ($edit_header ? "Revisi Gelar Alat " : "Form Gelar Alat ") . strtoupper($jenis_pekerjaan);
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
+<?php if ($edit_header && $edit_header['status'] === 'rejected'): ?>
+    <!-- Alert Revisi Ditolak Atasan -->
+    <div class="card" style="border:2px solid #ef4444; background:#fef2f2; margin-bottom:1.5rem; padding:1.25rem 1.5rem;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+            <div style="width:42px; height:42px; border-radius:50%; background:#ef4444; color:white; display:flex; align-items:center; justify-content:center; font-size:1.25rem;">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h3 style="font-size:1.05rem; font-weight:700; color:#991b1b; margin:0;">
+                    Mode Revisi Laporan: <?= htmlspecialchars($edit_header['nomor_dokumen'] ?? '#' . $edit_id) ?>
+                </h3>
+                <p style="font-size:0.825rem; color:#b91c1c; margin:2px 0 0;">
+                    Laporan ini sebelumnya dikembalikan oleh Manajemen Atasan untuk perbaikan. Silakan sesuaikan data dan kirim ulang.
+                </p>
+            </div>
+        </div>
+        <div style="background:#fff; border-radius:6px; padding:10px 14px; border-left:4px solid #ef4444; margin-top:8px;">
+            <strong style="font-size:0.8rem; text-transform:uppercase; color:#7f1d1d;">Catatan Arahan dari Manajemen:</strong>
+            <p style="margin:4px 0 0; font-size:0.9rem; color:#1e293b;">
+                <?= nl2br(htmlspecialchars($edit_header['catatan_manajemen'] ?? '-')) ?>
+            </p>
+        </div>
+    </div>
+<?php endif; ?>
+
 <div style="margin-bottom:1.5rem;">
-    <a href="index.php" class="btn btn-outline btn-sm" style="margin-bottom:0.75rem;">
-        <i class="fa-solid fa-arrow-left"></i> Kembali Pilih Regu
+    <a href="<?= $edit_id ? base_url('riwayat/detail.php?id=' . $edit_id) : 'index.php' ?>" class="btn btn-outline btn-sm" style="margin-bottom:0.75rem;">
+        <i class="fa-solid fa-arrow-left"></i> <?= $edit_id ? 'Kembali ke Detail' : 'Kembali Pilih Regu' ?>
     </a>
     <h1 style="font-size:1.5rem;margin-bottom:4px;">
         <i class="fa-solid fa-clipboard-check" style="color:var(--primary);margin-right:8px;"></i>
-        Checklist <?= htmlspecialchars($jenis_label[$jenis_pekerjaan] ?? strtoupper($jenis_pekerjaan)) ?>
+        <?= $edit_id ? 'Revisi ' : 'Checklist ' ?><?= htmlspecialchars($jenis_label[$jenis_pekerjaan] ?? strtoupper($jenis_pekerjaan)) ?>
     </h1>
     <p style="color:var(--text-muted);font-size:0.9rem;">
         <?= htmlspecialchars($regu['nama_regu']) ?>
         <?php if (!empty($regu['nopol'])): ?> &mdash; <strong><?= htmlspecialchars($regu['nopol']) ?></strong><?php endif; ?>
         | <?= htmlspecialchars($regu['kendaraan'] ?? '') ?>
+        <?php if ($edit_header): ?> &bull; No: <strong><?= htmlspecialchars($edit_header['nomor_dokumen']) ?></strong><?php endif; ?>
     </p>
 </div>
 
 <form method="POST" action="simpan.php" id="formGelarAlat" enctype="multipart/form-data">
     <input type="hidden" name="jenis_pekerjaan" value="<?= htmlspecialchars($jenis_pekerjaan) ?>">
     <input type="hidden" name="regu_id" value="<?= $regu_id ?>">
+    <input type="hidden" name="edit_id" value="<?= $edit_id ?>">
+    <input type="hidden" name="action" id="inspeksiAction" value="submit">
 
     <!-- ===== SECTION 1: Data Header ===== -->
     <div class="card" style="margin-bottom:1.25rem; border-left: 4px solid var(--primary);">
@@ -95,28 +153,28 @@ require_once __DIR__ . '/../includes/header.php';
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom:1rem;">
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Tanggal Apel Gelar Alat</label>
-                <input type="date" name="tanggal_inspeksi" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                <input type="date" name="tanggal_inspeksi" class="form-control" value="<?= htmlspecialchars($edit_header['tanggal_inspeksi'] ?? date('Y-m-d')) ?>" required>
             </div>
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Bulan / Tahun</label>
-                <input type="text" name="bulan_tahun" class="form-control" value="<?= date('F Y') ?>" required>
+                <input type="text" name="bulan_tahun" class="form-control" value="<?= htmlspecialchars($edit_header['bulan_tahun'] ?? date('F Y')) ?>" required>
             </div>
         </div>
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom:1rem;">
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Nama Pelaksana / Pemeriksa 1 <span style="color:var(--danger);">*</span></label>
-                <input type="text" name="nama_pelaksana_1" class="form-control" value="<?= htmlspecialchars($user['nama_lengkap']) ?>" required>
+                <input type="text" name="nama_pelaksana_1" class="form-control" value="<?= htmlspecialchars($edit_header['nama_pelaksana_1'] ?? $user['nama_lengkap']) ?>" required>
             </div>
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Nama Pelaksana 2 (jika ada)</label>
-                <input type="text" name="nama_pelaksana_2" class="form-control" placeholder="Opsional">
+                <input type="text" name="nama_pelaksana_2" class="form-control" value="<?= htmlspecialchars($edit_header['nama_pelaksana_2'] ?? '') ?>" placeholder="Opsional">
             </div>
         </div>
 
         <div class="form-group" style="margin-bottom:0;">
             <label class="form-label">Pendamping / Administrasi (jika ada)</label>
-            <input type="text" name="pendamping_admin" class="form-control" placeholder="Opsional">
+            <input type="text" name="pendamping_admin" class="form-control" value="<?= htmlspecialchars($edit_header['pendamping_admin'] ?? '') ?>" placeholder="Opsional">
         </div>
     </div>
 
@@ -161,6 +219,13 @@ require_once __DIR__ . '/../includes/header.php';
                     </thead>
                     <tbody>
                         <?php foreach ($items as $idx => $item): ?>
+                            <?php
+                            $prev_d = $existing_details_map[$item['master_barang_id']] ?? null;
+                            $realisasi_val = $prev_d ? $prev_d['jumlah_realisasi'] : $item['jumlah_standar'];
+                            $kondisi_val = $prev_d ? $prev_d['kondisi'] : 'baik';
+                            $keterangan_val = $prev_d ? $prev_d['keterangan'] : '';
+                            $foto_val = $prev_d ? $prev_d['foto_temuan'] : '';
+                            ?>
                             <tr id="row_<?= $item['id'] ?>">
                                 <td><?= $idx + 1 ?></td>
                                 <td>
@@ -169,6 +234,7 @@ require_once __DIR__ . '/../includes/header.php';
                                     <input type="hidden" name="items[<?= $item['id'] ?>][jumlah_standar]" value="<?= $item['jumlah_standar'] ?>">
                                     <input type="hidden" name="items[<?= $item['id'] ?>][satuan]" value="<?= htmlspecialchars($item['satuan_default']) ?>">
                                     <input type="hidden" name="items[<?= $item['id'] ?>][kategori]" value="<?= htmlspecialchars($item['kategori']) ?>">
+                                    <input type="hidden" name="items[<?= $item['id'] ?>][existing_foto]" value="<?= htmlspecialchars($foto_val) ?>">
                                 </td>
                                 <td class="text-center">
                                     <span class="badge" style="background:#f1f5f9;color:var(--navy);">
@@ -178,7 +244,7 @@ require_once __DIR__ . '/../includes/header.php';
                                 <td>
                                     <input type="number" name="items[<?= $item['id'] ?>][realisasi]" 
                                         class="form-control input-realisasi" min="0" 
-                                        value="<?= $item['jumlah_standar'] ?>" 
+                                        value="<?= $realisasi_val ?>" 
                                         data-std="<?= $item['jumlah_standar'] ?>"
                                         style="text-align:center;padding:6px;" required>
                                 </td>
@@ -192,7 +258,7 @@ require_once __DIR__ . '/../includes/header.php';
                                                     value="<?= $cval ?>"
                                                     class="cond-radio" 
                                                     data-item-id="<?= $item['id'] ?>"
-                                                    <?= $cval === 'baik' ? 'checked' : '' ?>
+                                                    <?= $cval === $kondisi_val ? 'checked' : '' ?>
                                                     required>
                                                 <label class="cond-label lbl-<?= str_replace('_', '-', $cval) ?>" for="cond_<?= $item['id'] ?>_<?= $cval ?>">
                                                     <?= $clabel ?>
@@ -202,7 +268,7 @@ require_once __DIR__ . '/../includes/header.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <input type="text" name="items[<?= $item['id'] ?>][keterangan]" class="form-control ket-input" placeholder="Opsional" style="font-size:0.8rem;padding:5px 8px;">
+                                    <input type="text" name="items[<?= $item['id'] ?>][keterangan]" class="form-control ket-input" placeholder="Opsional" value="<?= htmlspecialchars($keterangan_val) ?>" style="font-size:0.8rem;padding:5px 8px;">
                                 </td>
                                 <td>
                                     <input type="file" name="foto_item_<?= $item['id'] ?>" 
@@ -211,9 +277,14 @@ require_once __DIR__ . '/../includes/header.php';
                                         style="display:none;" id="fotoInput_<?= $item['id'] ?>">
                                     <button type="button" class="btn btn-outline btn-sm btn-foto-cam" 
                                         onclick="document.getElementById('fotoInput_<?= $item['id'] ?>').click()"
-                                        id="btnFoto_<?= $item['id'] ?>">
+                                        id="btnFoto_<?= $item['id'] ?>" title="Foto Temuan">
                                         <i class="fa-solid fa-camera"></i>
                                     </button>
+                                    <?php if (!empty($foto_val)): ?>
+                                        <div style="margin-top:4px; font-size:0.65rem; color:#10b981;">
+                                            <i class="fa-solid fa-check"></i> Ada foto
+                                        </div>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -224,6 +295,14 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- Mobile Card View (default) -->
             <div id="cards_<?= $kategori_key ?>">
                 <?php foreach ($items as $idx => $item): ?>
+                    <?php
+                    $prev_d = $existing_details_map[$item['master_barang_id']] ?? null;
+                    $realisasi_val = $prev_d ? $prev_d['jumlah_realisasi'] : $item['jumlah_standar'];
+                    $kondisi_val = $prev_d ? $prev_d['kondisi'] : 'baik';
+                    $keterangan_val = $prev_d ? $prev_d['keterangan'] : '';
+                    $foto_val = $prev_d ? $prev_d['foto_temuan'] : '';
+                    $need_ket = in_array($kondisi_val, ['rusak', 'waktu_ganti']);
+                    ?>
                     <div class="item-card" style="border:1px solid var(--border-color);border-radius:var(--radius-md);padding:12px;margin-bottom:8px;background:#fafafa;" id="card_<?= $item['id'] ?>">
                         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
                             <div>
@@ -233,11 +312,16 @@ require_once __DIR__ . '/../includes/header.php';
                                     Standar: <strong><?= $item['jumlah_standar'] ?> <?= htmlspecialchars($item['satuan_default']) ?></strong>
                                 </div>
                             </div>
-                            <div>
+                            <div style="text-align:right;">
                                 <input type="file" name="foto_item_<?= $item['id'] ?>" accept="image/*" capture="environment" style="display:none;" id="fotoInputM_<?= $item['id'] ?>">
                                 <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('fotoInputM_<?= $item['id'] ?>').click()" title="Foto Temuan">
                                     <i class="fa-solid fa-camera"></i>
                                 </button>
+                                <?php if (!empty($foto_val)): ?>
+                                    <div style="font-size:0.65rem; color:#10b981; margin-top:2px;">
+                                        <i class="fa-solid fa-check"></i> Foto tersimpan
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
 
@@ -245,12 +329,13 @@ require_once __DIR__ . '/../includes/header.php';
                         <input type="hidden" name="items[<?= $item['id'] ?>][jumlah_standar]" value="<?= $item['jumlah_standar'] ?>">
                         <input type="hidden" name="items[<?= $item['id'] ?>][satuan]" value="<?= htmlspecialchars($item['satuan_default']) ?>">
                         <input type="hidden" name="items[<?= $item['id'] ?>][kategori]" value="<?= htmlspecialchars($item['kategori']) ?>">
+                        <input type="hidden" name="items[<?= $item['id'] ?>][existing_foto]" value="<?= htmlspecialchars($foto_val) ?>">
 
                         <div style="display:grid;grid-template-columns:100px 1fr;gap:8px;margin-bottom:8px;align-items:center;">
                             <label style="font-size:0.8rem;font-weight:600;">Realisasi:</label>
                             <input type="number" name="items[<?= $item['id'] ?>][realisasi]"
                                 class="form-control input-realisasi" min="0"
-                                value="<?= $item['jumlah_standar'] ?>"
+                                value="<?= $realisasi_val ?>"
                                 data-std="<?= $item['jumlah_standar'] ?>"
                                 style="font-size:0.9rem;padding:6px;text-align:center;max-width:90px;"
                                 required>
@@ -267,7 +352,7 @@ require_once __DIR__ . '/../includes/header.php';
                                             value="<?= $cval ?>"
                                             class="cond-radio"
                                             data-item-id="<?= $item['id'] ?>"
-                                            <?= $cval === 'baik' ? 'checked' : '' ?>
+                                            <?= $cval === $kondisi_val ? 'checked' : '' ?>
                                             required>
                                         <label class="cond-label lbl-<?= str_replace('_','-',$cval) ?>" for="condm_<?= $item['id'] ?>_<?= $cval ?>" style="font-size:0.775rem;padding:5px 9px;">
                                             <?= $clabel ?>
@@ -277,9 +362,10 @@ require_once __DIR__ . '/../includes/header.php';
                             </div>
                         </div>
 
-                        <div id="ketWrapper_<?= $item['id'] ?>" style="display:none;">
+                        <div id="ketWrapper_<?= $item['id'] ?>" style="display:<?= $need_ket ? 'block' : 'none' ?>;">
                             <input type="text" name="items[<?= $item['id'] ?>][keterangan]"
                                 class="form-control ket-input" placeholder="Keterangan kerusakan / tindak lanjut..."
+                                value="<?= htmlspecialchars($keterangan_val) ?>"
                                 style="font-size:0.85rem;">
                         </div>
                     </div>
@@ -298,6 +384,15 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
         <div class="form-group" style="margin-bottom:0;">
             <label class="form-label">Upload Foto Bersama Regu / Apel Pasukan</label>
+            <?php if (!empty($edit_header['foto_kegiatan'])): ?>
+                <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+                    <img src="<?= base_url('uploads/foto_kegiatan/' . htmlspecialchars($edit_header['foto_kegiatan'])) ?>" style="max-height:70px; border-radius:6px; border:1px solid var(--border-color);">
+                    <div style="font-size:0.75rem; color:var(--text-muted);">
+                        Foto sebelumnya tersimpan. Unggah file baru jika ingin mengganti.
+                        <input type="hidden" name="existing_foto_kegiatan" value="<?= htmlspecialchars($edit_header['foto_kegiatan']) ?>">
+                    </div>
+                </div>
+            <?php endif; ?>
             <input type="file" name="foto_kegiatan" class="form-control" accept="image/*" capture="environment">
             <small style="color:var(--text-muted);">Foto bersama seluruh anggota regu saat apel gelar alat. Maks 5MB (JPG/PNG/WEBP).</small>
         </div>
@@ -310,9 +405,19 @@ require_once __DIR__ . '/../includes/header.php';
                 <i class="fa-solid fa-signature" style="color:var(--navy);margin-right:6px;"></i> C. Tanda Tangan Digital Petugas Pemeriksa
             </h2>
         </div>
-        <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:1rem;">
-            Tanda tangani pada bidang di bawah ini menggunakan jari atau stylus Anda sebagai pernyataan bahwa pemeriksaan telah dilakukan.
-        </p>
+        <?php if (!empty($edit_header['ttd_petugas'])): ?>
+            <div style="margin-bottom:12px; padding:10px 14px; background:#f8fafc; border-radius:6px; border:1px solid var(--border-color); display:flex; align-items:center; gap:14px;">
+                <img src="<?= htmlspecialchars($edit_header['ttd_petugas']) ?>" style="max-height:48px; border:1px solid #cbd5e1; border-radius:4px; background:#fff; padding:2px;">
+                <div style="font-size:0.8rem; color:var(--text-muted);">
+                    <strong style="color:var(--text-main);">Tanda tangan sebelumnya sudah tersimpan.</strong><br>
+                    Tanda tangani ulang pada canvas di bawah ini hanya jika Anda ingin memperbarui tanda tangan.
+                </div>
+            </div>
+        <?php else: ?>
+            <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:1rem;">
+                Tanda tangani pada bidang di bawah ini menggunakan jari atau stylus Anda sebagai pernyataan bahwa pemeriksaan telah dilakukan.
+            </p>
+        <?php endif; ?>
         <div class="signature-wrapper">
             <canvas class="signature-canvas" id="canvasPetugas"></canvas>
         </div>
@@ -334,7 +439,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <i class="fa-solid fa-note-sticky" style="color:var(--accent);margin-right:6px;"></i> D. Catatan Umum
             </h2>
         </div>
-        <textarea name="catatan_umum" class="form-control" rows="3" placeholder="Catatan umum hasil gelar alat, temuan K3, atau tindak lanjut yang perlu diketahui..."></textarea>
+        <textarea name="catatan_umum" class="form-control" rows="3" placeholder="Catatan umum hasil gelar alat, temuan K3, atau tindak lanjut yang perlu diketahui..."><?= htmlspecialchars($edit_header['catatan_umum'] ?? '') ?></textarea>
     </div>
 
     <!-- ===== Sticky Submit Bar ===== -->
@@ -345,11 +450,11 @@ require_once __DIR__ . '/../includes/header.php';
                     <strong><?= count($all_items) ?> item</strong> peralatan diperiksa &middot; <?= htmlspecialchars($regu['nama_regu']) ?>
                 </div>
                 <div style="display:flex;gap:10px;align-items:center;">
-                    <button type="submit" name="action" value="draft" class="btn btn-outline">
+                    <button type="button" onclick="kirimForm('draft')" class="btn btn-outline">
                         <i class="fa-regular fa-floppy-disk"></i> Simpan Draft
                     </button>
-                    <button type="submit" name="action" value="submit" id="btnSubmit" class="btn btn-primary btn-lg">
-                        <i class="fa-solid fa-paper-plane"></i> Submit ke Manajemen
+                    <button type="button" onclick="kirimForm('submit')" id="btnSubmit" class="btn btn-primary btn-lg">
+                        <i class="fa-solid fa-paper-plane"></i> <?= ($edit_header && $edit_header['status'] === 'rejected') ? 'Kirim Ulang Revisi ke Manajemen' : 'Submit ke Manajemen' ?>
                     </button>
                 </div>
             </div>
@@ -374,7 +479,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btnAllBaik').addEventListener('click', function() {
         document.querySelectorAll('.cond-radio[value="baik"]').forEach(radio => {
             radio.checked = true;
-            // Sembunyikan kolom keterangan
             const itemId = radio.dataset.itemId;
             const ket = document.getElementById('ketWrapper_' + itemId);
             if (ket) ket.style.display = 'none';
@@ -382,7 +486,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.input-realisasi').forEach(input => {
             input.value = input.dataset.std;
         });
-        // Animasi konfirmasi
         this.innerHTML = '<i class="fa-solid fa-check-double"></i> Semua Ditandai Baik!';
         this.style.background = '#059669';
         setTimeout(() => {
@@ -426,25 +529,33 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-
-    // ========================================
-    // Validasi sebelum submit
-    // ========================================
-    document.getElementById('formGelarAlat').addEventListener('submit', function(e) {
-        const action = document.activeElement.value;
-        if (action === 'submit') {
-            if (window.sigPad && window.sigPad.isEmpty()) {
-                e.preventDefault();
-                alert('Tanda tangan digital Petugas Pemeriksa belum diisi.\nSilakan tanda tangan pada kolom yang tersedia.');
-                return;
-            }
-        }
-        // Show loading
-        const btn = document.getElementById('btnSubmit');
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim...';
-        btn.disabled = true;
-    });
 });
+
+// ========================================
+// Function Kirim Form Aman
+// ========================================
+function kirimForm(action) {
+    document.getElementById('inspeksiAction').value = action;
+    const hasExistingTtd = <?= (!empty($edit_header['ttd_petugas'])) ? 'true' : 'false' ?>;
+
+    if (action === 'submit') {
+        if ((!window.sigPad || window.sigPad.isEmpty()) && !hasExistingTtd) {
+            alert('Tanda tangan digital Petugas Pemeriksa belum diisi.\nSilakan tanda tangan pada kolom canvas yang tersedia.');
+            return;
+        }
+        if (window.sigPad && !window.sigPad.isEmpty()) {
+            window.sigPad.updateInput();
+        }
+        if (!confirm('Apakah Anda yakin data hasil pemeriksaan sudah benar dan siap dikirimkan ke Manajemen Atasan?')) {
+            return;
+        }
+    }
+
+    const btn = document.getElementById('btnSubmit');
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + (action === 'submit' ? 'Mengirim...' : 'Menyimpan...');
+    btn.style.pointerEvents = 'none';
+    document.getElementById('formGelarAlat').submit();
+}
 </script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

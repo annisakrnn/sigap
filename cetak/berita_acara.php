@@ -144,10 +144,20 @@ $kondisi_label_print = [
 <body>
 
 <!-- Tombol Cetak (tidak tercetak) -->
-<div class="no-print" style="position:sticky;top:0;z-index:99;">
-    <a href="<?= base_url('riwayat/detail.php?id=' . $id) ?>" class="btn-back">&#8592; Kembali</a>
-    <a href="javascript:window.print()">🖨 Cetak / Simpan PDF Sekarang</a>
-    <span style="margin-left:20px;font-size:0.8rem;opacity:0.7;">Gunakan Ctrl+P &rarr; "Save as PDF" untuk menyimpan</span>
+<div class="no-print" style="position:sticky;top:0;z-index:99;display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:#0f172a;box-shadow:0 4px 12px rgba(0,0,0,0.15);flex-wrap:wrap;gap:10px;">
+    <div>
+        <a href="<?= base_url('riwayat/detail.php?id=' . $id) ?>" class="btn-back" style="background:#334155;color:#fff;padding:8px 16px;border-radius:6px;text-decoration:none;font-weight:600;font-size:0.85rem;display:inline-block;">
+            &larr; Kembali ke Detail
+        </a>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <span style="color:#94a3b8;font-size:0.825rem;">
+            Tips: Pilih printer <strong>"Save as PDF"</strong> pada dialog print untuk mengunduh PDF resmi.
+        </span>
+        <button onclick="window.print()" style="background:#10b981;color:white;border:none;padding:9px 20px;border-radius:6px;font-weight:700;font-size:0.9rem;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">
+            🖨 Cetak / Simpan PDF
+        </button>
+    </div>
 </div>
 
 <div class="page">

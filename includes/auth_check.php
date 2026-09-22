@@ -12,16 +12,40 @@ require_once __DIR__ . '/../config/database.php';
 
 function base_url($path = '') {
     $script_name = $_SERVER['SCRIPT_NAME'] ?? '';
-    // Ambil root folder project
-    $base_dir = rtrim(dirname($script_name), '/\\');
-    // Jika berada dalam subfolder seperti /auth atau /inspeksi, naikkan ke root
-    $subfolders = ['/auth', '/inspeksi', '/dashboard', '/approval', '/cetak', '/riwayat'];
-    foreach ($subfolders as $sf) {
-        if (str_ends_with($base_dir, $sf)) {
-            $base_dir = substr($base_dir, 0, -strlen($sf));
+    // Strategi: cari posisi folder project di dalam script_name
+    // Nama folder yang dikenal sebagai folder project root
+    $project_folders = ['sigap'];
+    
+    $segments = explode('/', trim($script_name, '/'));
+    $root_index = -1;
+    
+    // Cari folder project root dari kiri
+    foreach ($segments as $idx => $seg) {
+        if (in_array(strtolower($seg), $project_folders)) {
+            $root_index = $idx;
             break;
         }
     }
+    
+    if ($root_index >= 0) {
+        // Ada nama folder project, bangun root sampai (dan termasuk) folder project
+        $root_parts = array_slice($segments, 0, $root_index + 1);
+        $base_dir = '/' . implode('/', $root_parts);
+    } else {
+        // Tidak ada folder project yang dikenali (dijalankan langsung di root web server)
+        // Cari subfolder yang dikenal dan strip semuanya
+        $known_subs = ['auth', 'inspeksi', 'dashboard', 'approval', 'cetak', 'riwayat',
+                       'master', 'includes', 'config', 'database', 'assets'];
+        $base_parts = [];
+        foreach ($segments as $seg) {
+            if (in_array(strtolower($seg), $known_subs) || pathinfo($seg, PATHINFO_EXTENSION)) {
+                break;
+            }
+            $base_parts[] = $seg;
+        }
+        $base_dir = $base_parts ? '/' . implode('/', $base_parts) : '';
+    }
+    
     return rtrim($base_dir, '/') . '/' . ltrim($path, '/');
 }
 
