@@ -105,6 +105,32 @@ if ($user && $user['role'] === 'manajemen') {
                         <span>Rekap Berita Acara</span>
                     </a>
                 </li>
+
+                <div class="sidebar-nav-label" style="margin-top:14px;">Master Data</div>
+                <li>
+                    <a href="<?= base_url('master/regu/index.php') ?>" class="sidebar-link <?= strpos($_SERVER['REQUEST_URI'], '/master/regu') !== false ? 'active' : '' ?>">
+                        <i class="fa-solid fa-truck-ramp-box"></i>
+                        <span>Regu & Armada</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= base_url('master/barang/index.php') ?>" class="sidebar-link <?= strpos($_SERVER['REQUEST_URI'], '/master/barang') !== false ? 'active' : '' ?>">
+                        <i class="fa-solid fa-toolbox"></i>
+                        <span>Katalog Peralatan</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= base_url('master/template/index.php') ?>" class="sidebar-link <?= strpos($_SERVER['REQUEST_URI'], '/master/template') !== false ? 'active' : '' ?>">
+                        <i class="fa-solid fa-list-check"></i>
+                        <span>Template Checklist</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= base_url('master/users/index.php') ?>" class="sidebar-link <?= strpos($_SERVER['REQUEST_URI'], '/master/users') !== false ? 'active' : '' ?>">
+                        <i class="fa-solid fa-users-gear"></i>
+                        <span>Kelola Pengguna</span>
+                    </a>
+                </li>
             <?php endif; ?>
         </ul>
     </nav>
