@@ -215,34 +215,6 @@ if (isset($_GET['demo']) && $pdo) {
         </button>
     </form>
 
-    <!-- 1-Click Quick Demo Login -->
-    <div class="demo-section">
-        <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
-            <span>Akses Cepat Pengujian:</span>
-            <span class="badge" style="background:#f1f5f9;color:#64748b;font-size:0.68rem;">1-Klik Demo</span>
-        </div>
-
-        <!-- Role 1: Petugas -->
-        <a href="?demo=petugas_yandal" class="demo-btn">
-            <span><i class="fa-solid fa-hard-hat" style="color:#0284c7;margin-right:6px;"></i> <strong>Ropiko</strong> &middot; Pelaksana Yandal</span>
-            <span class="badge badge-submitted" style="font-size:0.68rem;">Petugas</span>
-        </a>
-        <a href="?demo=petugas_p2tl" class="demo-btn">
-            <span><i class="fa-solid fa-clipboard-user" style="color:#0284c7;margin-right:6px;"></i> <strong>Sayitno</strong> &middot; Pelaksana P2TL</span>
-            <span class="badge badge-submitted" style="font-size:0.68rem;">Petugas</span>
-        </a>
-
-        <!-- Role 2: Manajemen Atasan -->
-        <a href="?demo=manager_balong" class="demo-btn" style="border-left: 3px solid #f59e0b;">
-            <span><i class="fa-solid fa-user-tie" style="color:#f59e0b;margin-right:6px;"></i> <strong>Yusuf Irfan</strong> &middot; Manager ULP</span>
-            <span class="badge" style="background:#fffbeb;color:#b45309;border:1px solid #fde68a;font-size:0.68rem;">Manajemen</span>
-        </a>
-        <a href="?demo=tl_k3" class="demo-btn" style="border-left: 3px solid #10b981;">
-            <span><i class="fa-solid fa-shield-halved" style="color:#10b981;margin-right:6px;"></i> <strong>Bindraerda</strong> &middot; TL K3L</span>
-            <span class="badge" style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;font-size:0.68rem;">Manajemen</span>
-        </a>
-    </div>
-
     <div style="text-align: center; margin-top: 18px;">
         <a href="<?= base_url('setup.php') ?>" style="font-size: 0.8rem; color: var(--text-muted); transition: color 0.15s;">
             <i class="fa-solid fa-gear" style="margin-right:4px;"></i> Reset / Setup Database Ulang

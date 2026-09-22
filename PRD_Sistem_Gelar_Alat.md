@@ -329,3 +329,30 @@ Berikut ringkasan daftar alat yang diambil langsung dari dokumen fisik:
 3. **YANDAL & ULC:** Telescopic hotstick 20kV 10.5m, Groundcluster, Insulation tester 10.000V, Comealong wire grip, Tang scoon hydraulic, Phase sequence indicator, LOTO, Voltage detector, APAR 3kg, Ban cadangan.
 4. **HAR (Pemeliharaan):** Chain saw 14", Parang, Angkus, Linggis besar, Sosrok tiang, Kunci moment, Kunci pipa 4", Tali nilon/tampar/baja seling, Cairan WD 40.
 
+---
+
+## 11. Daftar Akun & Kredensial Sistem (Default)
+
+> **Password default semua akun:** `123456`
+
+### 👷 Role: Petugas Pemeriksa
+
+| Username | Nama Lengkap | Jabatan |
+|---|---|---|
+| `petugas_yandal` | Ropiko (Pelaksana Yandal) | Petugas Pelaksana Yandal ULP Balong |
+| `petugas_p2tl` | Sayitno (Pelaksana P2TL) | Pelaksana Lapangan PT Citacontrac |
+| `petugas_har` | Ahmad Fauzi (Pelaksana HAR) | Pelaksana Pemeliharaan Distribusi |
+| `petugas_sr` | Budi Santoso (Pelaksana SR APP) | Pelaksana Penyambungan SR APP 1 Phasa |
+
+### 🏢 Role: Manajemen Atasan
+
+| Username | Nama Lengkap | Jabatan |
+|---|---|---|
+| `manager_balong` | Yusuf Irfan | Manager ULP Balong |
+| `spv_yantek` | A. Kholid | SPV Yantek ULP Balong |
+| `tl_k3` | Bindraerda Hanindiawan | TL K3L dan KAM ULP Balong |
+| `tl_teknik` | Sofyan | TL Teknik ULP Balong |
+
+> **Catatan Keamanan:** Ganti password default sebelum deployment ke lingkungan produksi.
+
+
