@@ -225,7 +225,13 @@ $kondisi_label_print = [
                             <?= $d['jumlah_realisasi'] ?>
                         </td>
                         <td class="cond-<?= $d['kondisi'] ?>"><?= $kondisi_label_print[$d['kondisi']] ?? $d['kondisi'] ?></td>
-                        <td style="font-size:8.5pt;"><?= htmlspecialchars($d['keterangan'] ?? '') ?></td>
+                        <?php
+                            $ket = $d['keterangan'] ?? '';
+                            if (strpos($ket, '<br /><b>Deprecated</b>') !== false) {
+                                $ket = '';
+                            }
+                        ?>
+                        <td style="font-size:8.5pt;"><?= htmlspecialchars($ket) ?></td>
                     </tr>
                 <?php endforeach; ?>
             <?php endforeach; ?>

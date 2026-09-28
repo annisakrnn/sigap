@@ -4,7 +4,7 @@
  * SIGAP
  */
 require_once __DIR__ . '/../includes/auth_check.php';
-require_role('petugas');
+require_role(['petugas', 'manajemen']);
 
 $pdo = get_db_connection();
 if (!$pdo) { header("Location: ../setup.php"); exit; }
@@ -28,10 +28,16 @@ if (!$jenis_pekerjaan || !$regu_id) {
 $edit_id = intval($_POST['edit_id'] ?? 0);
 $existing_header = null;
 if ($edit_id > 0) {
-    $stmt_cek = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id AND petugas_id = :uid LIMIT 1");
-    $stmt_cek->execute([':id' => $edit_id, ':uid' => $user['id']]);
+    if ($user['role'] === 'manajemen') {
+        $stmt_cek = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id LIMIT 1");
+        $stmt_cek->execute([':id' => $edit_id]);
+    } else {
+        $stmt_cek = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id AND petugas_id = :uid LIMIT 1");
+        $stmt_cek->execute([':id' => $edit_id, ':uid' => $user['id']]);
+    }
     $existing_header = $stmt_cek->fetch();
-    if (!$existing_header || !in_array($existing_header['status'], ['draft', 'rejected'])) {
+    // Allow saving if draft/rejected or if user is manajemen (they can override)
+    if (!$existing_header || (!in_array($existing_header['status'], ['draft', 'rejected']) && $user['role'] !== 'manajemen')) {
         set_flash('error', "Dokumen tidak dapat diubah.");
         header("Location: index.php"); exit;
     }

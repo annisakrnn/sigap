@@ -4,7 +4,7 @@
  * SIGAP
  */
 require_once __DIR__ . '/../includes/auth_check.php';
-require_role('petugas');
+require_role(['petugas', 'manajemen']);
 
 $pdo = get_db_connection();
 if (!$pdo) {
