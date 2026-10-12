@@ -151,11 +151,21 @@ require_once __DIR__ . '/../includes/header.php';
                 <?php if ($header['nama_pelaksana_2']): ?>
                     <tr><td style="color:var(--text-muted);padding:4px 0;">Pelaksana 2</td><td><?= htmlspecialchars($header['nama_pelaksana_2']) ?></td></tr>
                 <?php endif; ?>
-                <tr><td style="color:var(--text-muted);padding:4px 0;">Jabatan</td><td><?= htmlspecialchars($header['jabatan_petugas']) ?></td></tr>
+                <tr><td style="color:var(--text-muted);padding:4px 0;">Jabatan</td><td><?= htmlspecialchars(isset($header['jabatan_petugas']) ? $header['jabatan_petugas'] : 'Pelaksana Lapangan') ?></td></tr>
+                <?php if (!empty($header['ttd_petugas'])): ?>
+                    <tr><td style="color:var(--text-muted);padding:4px 0;vertical-align:top;">Tanda Tangan</td><td>
+                        <img src="<?= htmlspecialchars($header['ttd_petugas']) ?>" style="max-height:48px;max-width:140px;border:1px solid #cbd5e1;border-radius:4px;background:#fff;padding:2px;display:block;margin-top:2px;">
+                    </td></tr>
+                <?php endif; ?>
                 <tr><td style="color:var(--text-muted);padding:4px 0;">Status</td><td><span class="badge badge-<?= $header['status'] ?>"><?= strtoupper($header['status']) ?></span></td></tr>
                 <?php if ($header['status'] === 'approved' && $header['nama_pejabat_manajemen']): ?>
                     <tr><td style="color:var(--text-muted);padding:4px 0;">Disahkan Oleh</td><td><strong><?= htmlspecialchars($header['nama_pejabat_manajemen']) ?></strong></td></tr>
                     <tr><td style="color:var(--text-muted);padding:4px 0;">Jabatan Atasan</td><td><?= htmlspecialchars(isset($header['jabatan_manajemen']) ? $header['jabatan_manajemen'] : '-') ?></td></tr>
+                    <?php if (!empty($header['ttd_manajemen'])): ?>
+                        <tr><td style="color:var(--text-muted);padding:4px 0;vertical-align:top;">TTD Pengesahan</td><td>
+                            <img src="<?= htmlspecialchars($header['ttd_manajemen']) ?>" style="max-height:48px;max-width:140px;border:1px solid #cbd5e1;border-radius:4px;background:#fff;padding:2px;display:block;margin-top:2px;">
+                        </td></tr>
+                    <?php endif; ?>
                     <tr><td style="color:var(--text-muted);padding:4px 0;">Tgl Pengesahan</td><td><?= date('d/m/Y H:i', strtotime($header['tanggal_approval'])) ?></td></tr>
                 <?php endif; ?>
             </table>
@@ -273,7 +283,7 @@ require_once __DIR__ . '/../includes/header.php';
     <?php endforeach; ?>
 </div>
 
-<?php if ($user['role'] === 'manajemen'): ?>
+<?php if ($user && $user['role'] === 'manajemen'): ?>
 <!-- Modal Selesai Diperbaiki -->
 <div id="doneModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,0.6); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); align-items:center; justify-content:center;">
     <div style="background:#ffffff; border-radius:var(--radius-xl); padding:2rem; max-width:440px; width:90%; box-shadow:var(--shadow-xl);">

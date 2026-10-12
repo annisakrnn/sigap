@@ -148,7 +148,7 @@ require_once __DIR__ . '/../includes/header.php';
                         <th>Tanggal Apel</th>
                         <th>Jenis</th>
                         <th>Regu & Armada</th>
-                        <th>Petugas</th>
+                        <th>Petugas / Pelaksana</th>
                         <th>Temuan Fisik</th>
                         <th>Status</th>
                         <th style="text-align:center;">Aksi</th>
@@ -157,11 +157,13 @@ require_once __DIR__ . '/../includes/header.php';
                 <tbody>
                     <?php foreach ($rows as $i => $row): ?>
                         <?php 
+                        $nama_pemeriksa = !empty($row['nama_pelaksana_1']) ? $row['nama_pelaksana_1'] : $row['nama_petugas'];
                         $search_keywords = strtolower(
                             (isset($row['nomor_dokumen']) ? $row['nomor_dokumen'] : '') . ' ' .
                             $row['nama_regu'] . ' ' .
                             (isset($row['nopol']) ? $row['nopol'] : '') . ' ' .
-                            $row['nama_petugas'] . ' ' .
+                            $nama_pemeriksa . ' ' .
+                            (isset($row['nama_pelaksana_2']) ? $row['nama_pelaksana_2'] : '') . ' ' .
                             $row['jenis_pekerjaan'] . ' ' .
                             $row['status']
                         );
@@ -183,7 +185,16 @@ require_once __DIR__ . '/../includes/header.php';
                                     <div style="font-size:0.75rem; color:var(--text-muted);"><?= htmlspecialchars($row['nopol']) ?></div>
                                 <?php endif; ?>
                             </td>
-                            <td style="font-size:0.85rem; color:var(--text-main); font-weight:500;"><?= htmlspecialchars($row['nama_petugas']) ?></td>
+                            <td>
+                                <div style="font-weight:600; color:var(--text-main); font-size:0.875rem;">
+                                    <?= htmlspecialchars($nama_pemeriksa) ?>
+                                </div>
+                                <?php if (!empty($row['nama_pelaksana_2'])): ?>
+                                    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
+                                        <i class="fa-solid fa-user-group" style="font-size:0.7rem;margin-right:3px;"></i><?= htmlspecialchars($row['nama_pelaksana_2']) ?>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
                             <td>
                                 <?php if ($row['jml_temuan'] > 0): ?>
                                     <span class="badge badge-rejected" style="font-size:0.68rem;">
