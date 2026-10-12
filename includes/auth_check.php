@@ -11,42 +11,29 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/../config/database.php';
 
 function base_url($path = '') {
-    $script_name = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
-    // Strategi: cari posisi folder project di dalam script_name
-    // Nama folder yang dikenal sebagai folder project root
-    $project_folders = ['sigap'];
-    
-    $segments = explode('/', trim($script_name, '/'));
-    $root_index = -1;
-    
-    // Cari folder project root dari kiri
-    foreach ($segments as $idx => $seg) {
-        if (in_array(strtolower($seg), $project_folders)) {
-            $root_index = $idx;
-            break;
+    static $base_dir = null;
+
+    if ($base_dir === null) {
+        // Hitung root project berdasarkan lokasi fisik file ini.
+        // File ini ada di: <project_root>/includes/auth_check.php
+        // Jadi project root = dirname(dirname(__FILE__))
+        $project_root = str_replace('\\', '/', realpath(__DIR__ . '/..'));
+        $doc_root     = str_replace('\\', '/', realpath(isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] : ''));
+
+        if ($doc_root && strpos($project_root, $doc_root) === 0) {
+            // Project berada di bawah document root → hitung sub-path relatif
+            $base_dir = substr($project_root, strlen($doc_root));
+        } else {
+            // Fallback: gunakan SCRIPT_NAME untuk menebak base path
+            $script = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
+            $base_dir = rtrim(dirname(dirname($script)), '/');
         }
+
+        // Pastikan tidak ada trailing slash
+        $base_dir = rtrim($base_dir, '/');
     }
-    
-    if ($root_index >= 0) {
-        // Ada nama folder project, bangun root sampai (dan termasuk) folder project
-        $root_parts = array_slice($segments, 0, $root_index + 1);
-        $base_dir = '/' . implode('/', $root_parts);
-    } else {
-        // Tidak ada folder project yang dikenali (dijalankan langsung di root web server)
-        // Cari subfolder yang dikenal dan strip semuanya
-        $known_subs = ['auth', 'inspeksi', 'dashboard', 'approval', 'cetak', 'riwayat',
-                       'master', 'includes', 'config', 'database', 'assets'];
-        $base_parts = [];
-        foreach ($segments as $seg) {
-            if (in_array(strtolower($seg), $known_subs) || pathinfo($seg, PATHINFO_EXTENSION)) {
-                break;
-            }
-            $base_parts[] = $seg;
-        }
-        $base_dir = $base_parts ? '/' . implode('/', $base_parts) : '';
-    }
-    
-    return rtrim($base_dir, '/') . '/' . ltrim($path, '/');
+
+    return $base_dir . '/' . ltrim($path, '/');
 }
 
 function is_logged_in() {
