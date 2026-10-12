@@ -67,7 +67,7 @@ require_once __DIR__ . '/../includes/header.php';
             <?= $user['role'] === 'petugas' ? 'Daftar dokumen gelar alat yang pernah Anda laksanakan.' : 'Rekap seluruh laporan gelar alat dari seluruh regu & unit.' ?>
         </p>
     </div>
-    <?php if ($user['role'] === 'petugas'): ?>
+    <?php if (in_array($user['role'], ['petugas', 'manajemen'])): ?>
         <a href="<?= base_url('inspeksi/index.php') ?>" class="btn btn-primary">
             <i class="fa-solid fa-plus"></i> Gelar Alat Baru
         </a>
@@ -207,11 +207,14 @@ require_once __DIR__ . '/../includes/header.php';
                                         <a href="<?= base_url('approval/review.php?id=' . $row['id']) ?>" class="btn btn-primary btn-sm">
                                             <i class="fa-solid fa-signature"></i> Review
                                         </a>
-                                    <?php elseif ($user['role'] === 'petugas' && in_array($row['status'], ['rejected', 'draft'])): ?>
+                                    <?php elseif (in_array($row['status'], ['rejected', 'draft'])): ?>
                                         <a href="<?= base_url('inspeksi/form.php?edit_id=' . $row['id']) ?>" class="btn btn-warning btn-sm" title="Revisi / Edit Data">
                                             <i class="fa-solid fa-pen-to-square"></i> <?= $row['status'] === 'rejected' ? 'Revisi' : 'Lanjut' ?>
                                         </a>
                                     <?php endif; ?>
+                                    <a href="<?= base_url('riwayat/hapus.php?id=' . $row['id']) ?>" class="btn btn-danger btn-sm" onclick="return confirm('Apakah Anda yakin ingin menghapus dokumen ini secara permanen?');" title="Hapus Dokumen">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
                                     <a href="<?= base_url('riwayat/detail.php?id=' . $row['id']) ?>" class="btn btn-outline btn-sm">
                                         <i class="fa-solid fa-eye"></i> Detail
                                     </a>

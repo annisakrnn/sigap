@@ -16,9 +16,12 @@ $edit_header = null;
 $existing_details_map = [];
 
 if ($edit_id > 0) {
-    if ($user) {
-        $stmt_edit = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id AND (petugas_id = :uid OR :is_mgr = 1) LIMIT 1");
-        $stmt_edit->execute([':id' => $edit_id, ':uid' => $user['id'], ':is_mgr' => ($user['role'] === 'manajemen' ? 1 : 0)]);
+    if ($user && $user['role'] === 'manajemen') {
+        $stmt_edit = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id LIMIT 1");
+        $stmt_edit->execute([':id' => $edit_id]);
+    } elseif ($user) {
+        $stmt_edit = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id AND petugas_id = :uid LIMIT 1");
+        $stmt_edit->execute([':id' => $edit_id, ':uid' => $user['id']]);
     } else {
         $stmt_edit = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id LIMIT 1");
         $stmt_edit->execute([':id' => $edit_id]);
@@ -295,7 +298,7 @@ require_once __DIR__ . '/../includes/header.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <input type="text" name="items[<?= $item['id'] ?>][keterangan]" class="form-control ket-input" placeholder="Opsional" value="<?= htmlspecialchars($keterangan_val) ?>" style="font-size:0.8rem;padding:5px 8px;">
+                                    <input type="text" name="items[<?= $item['id'] ?>][keterangan]" class="form-control ket-input" placeholder="Opsional" value="<?= htmlspecialchars($keterangan_val ?? '') ?>" style="font-size:0.8rem;padding:5px 8px;">
                                 </td>
                                 <td>
                                     <input type="file" name="foto_item_<?= $item['id'] ?>" 
@@ -392,7 +395,7 @@ require_once __DIR__ . '/../includes/header.php';
                         <div id="ketWrapper_<?= $item['id'] ?>" style="display:<?= $need_ket ? 'block' : 'none' ?>;">
                             <input type="text" name="items[<?= $item['id'] ?>][keterangan]"
                                 class="form-control ket-input" placeholder="Keterangan kerusakan / tindak lanjut..."
-                                value="<?= htmlspecialchars($keterangan_val) ?>"
+                                value="<?= htmlspecialchars($keterangan_val ?? '') ?>"
                                 style="font-size:0.85rem;">
                         </div>
                     </div>

@@ -224,8 +224,14 @@ $kondisi_label_print = [
                         <td style="text-align:center;font-weight:bold;<?= $d['jumlah_realisasi'] < $d['jumlah_standar'] ? 'color:#7b241c;' : '' ?>">
                             <?= $d['jumlah_realisasi'] ?>
                         </td>
-                        <td class="cond-<?= $d['kondisi'] ?>"><?= isset($kondisi_label_print[$d['kondisi']]) ? $kondisi_label_print[$d['kondisi']] : $d['kondisi'] ?></td>
-                        <td style="font-size:8.5pt;"><?= htmlspecialchars(isset($d['keterangan']) ? $d['keterangan'] : '') ?></td>
+                        <td class="cond-<?= $d['kondisi'] ?>"><?= isset($kondisi_label_print[$d['kondisi']]) ? $kondisi_label_print[$d['kondisi']] : (isset($d['kondisi']) ? $d['kondisi'] : '') ?></td>
+                        <?php
+                            $ket = isset($d['keterangan']) ? $d['keterangan'] : '';
+                            if (strpos($ket, '<br /><b>Deprecated</b>') !== false) {
+                                $ket = '';
+                            }
+                        ?>
+                        <td style="font-size:8.5pt;"><?= htmlspecialchars($ket) ?></td>
                     </tr>
                 <?php endforeach; ?>
             <?php endforeach; ?>

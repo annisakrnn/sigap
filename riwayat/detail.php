@@ -210,7 +210,13 @@ require_once __DIR__ . '/../includes/header.php';
                                     <?php $kl = isset($kondisi_labels[$d['kondisi']]) ? $kondisi_labels[$d['kondisi']] : ['label'=>$d['kondisi'],'class'=>'']; ?>
                                     <span class="badge <?= $kl['class'] ?>"><?= $kl['label'] ?></span>
                                 </td>
-                                <td style="color:var(--text-muted);font-size:0.8rem;"><?= htmlspecialchars(isset($d['keterangan']) ? $d['keterangan'] : '-') ?></td>
+                                <?php
+                                    $ket = isset($d['keterangan']) ? $d['keterangan'] : '-';
+                                    if (strpos($ket, '<br /><b>Deprecated</b>') !== false) {
+                                        $ket = '-';
+                                    }
+                                ?>
+                                <td style="color:var(--text-muted);font-size:0.8rem;"><?= htmlspecialchars($ket) ?></td>
                                 <td>
                                     <?php if (!empty($d['foto_temuan'])): ?>
                                         <a href="<?= base_url('uploads/foto_temuan/' . htmlspecialchars($d['foto_temuan'])) ?>" target="_blank">

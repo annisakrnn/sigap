@@ -42,15 +42,19 @@ if (!$jenis_pekerjaan || !$regu_id) {
 $edit_id = intval(isset($_POST['edit_id']) ? $_POST['edit_id'] : 0);
 $existing_header = null;
 if ($edit_id > 0) {
-    if ($user) {
-        $stmt_cek = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id AND (petugas_id = :uid OR :is_mgr = 1) LIMIT 1");
-        $stmt_cek->execute([':id' => $edit_id, ':uid' => $user['id'], ':is_mgr' => ($user['role'] === 'manajemen' ? 1 : 0)]);
+    if ($user && $user['role'] === 'manajemen') {
+        $stmt_cek = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id LIMIT 1");
+        $stmt_cek->execute([':id' => $edit_id]);
+    } elseif ($user) {
+        $stmt_cek = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id AND petugas_id = :uid LIMIT 1");
+        $stmt_cek->execute([':id' => $edit_id, ':uid' => $user['id']]);
     } else {
         $stmt_cek = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id LIMIT 1");
         $stmt_cek->execute([':id' => $edit_id]);
     }
     $existing_header = $stmt_cek->fetch();
-    if (!$existing_header || !in_array($existing_header['status'], ['draft', 'rejected'])) {
+    // Allow saving if draft/rejected or if user is manajemen (they can override)
+    if (!$existing_header || (!in_array($existing_header['status'], ['draft', 'rejected']) && ($user ? $user['role'] !== 'manajemen' : false))) {
         set_flash('error', "Dokumen tidak dapat diubah.");
         header("Location: index.php"); exit;
     }
