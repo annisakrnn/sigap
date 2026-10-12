@@ -4,7 +4,6 @@
  * SIGAP
  */
 require_once __DIR__ . '/../includes/auth_check.php';
-require_login();
 
 $pdo = get_db_connection();
 if (!$pdo) { header("Location: ../setup.php"); exit; }
@@ -21,7 +20,7 @@ $filter_sampai  = isset($_GET['tgl_sampai']) ? $_GET['tgl_sampai'] : '';
 $where = [];
 $params = [];
 
-if ($user['role'] === 'petugas') {
+if ($user && $user['role'] === 'petugas') {
     $where[] = "h.petugas_id = :pid";
     $params[':pid'] = $user['id'];
 }
@@ -64,14 +63,12 @@ require_once __DIR__ . '/../includes/header.php';
     <div>
         <h1 style="font-size:1.65rem; font-weight:800; letter-spacing:-0.02em; margin-bottom:4px; color:var(--text-main);">Riwayat Berita Acara Gelar Alat</h1>
         <p style="color:var(--text-muted); font-size:0.9rem;">
-            <?= $user['role'] === 'petugas' ? 'Daftar dokumen gelar alat yang pernah Anda laksanakan.' : 'Rekap seluruh laporan gelar alat dari seluruh regu & unit.' ?>
+            <?= ($user && $user['role'] === 'petugas') ? 'Daftar dokumen gelar alat yang pernah Anda laksanakan.' : 'Rekap seluruh laporan gelar alat dari seluruh regu & unit.' ?>
         </p>
     </div>
-    <?php if (in_array($user['role'], ['petugas', 'manajemen'])): ?>
-        <a href="<?= base_url('inspeksi/index.php') ?>" class="btn btn-primary">
-            <i class="fa-solid fa-plus"></i> Gelar Alat Baru
-        </a>
-    <?php endif; ?>
+    <a href="<?= base_url('inspeksi/index.php') ?>" class="btn btn-primary">
+        <i class="fa-solid fa-plus"></i> Gelar Alat Baru
+    </a>
 </div>
 
 <!-- Filter Form -->
@@ -203,7 +200,7 @@ require_once __DIR__ . '/../includes/header.php';
                             </td>
                             <td style="text-align:center; white-space:nowrap;">
                                 <div style="display:inline-flex; gap:6px;">
-                                    <?php if ($user['role'] === 'manajemen' && $row['status'] === 'submitted'): ?>
+                                    <?php if ($user && $user['role'] === 'manajemen' && $row['status'] === 'submitted'): ?>
                                         <a href="<?= base_url('approval/review.php?id=' . $row['id']) ?>" class="btn btn-primary btn-sm">
                                             <i class="fa-solid fa-signature"></i> Review
                                         </a>
@@ -212,9 +209,11 @@ require_once __DIR__ . '/../includes/header.php';
                                             <i class="fa-solid fa-pen-to-square"></i> <?= $row['status'] === 'rejected' ? 'Revisi' : 'Lanjut' ?>
                                         </a>
                                     <?php endif; ?>
-                                    <a href="<?= base_url('riwayat/hapus.php?id=' . $row['id']) ?>" class="btn btn-danger btn-sm" onclick="return confirm('Apakah Anda yakin ingin menghapus dokumen ini secara permanen?');" title="Hapus Dokumen">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </a>
+                                    <?php if ($user && ($user['role'] === 'manajemen' || $row['petugas_id'] == $user['id'])): ?>
+                                        <a href="<?= base_url('riwayat/hapus.php?id=' . $row['id']) ?>" class="btn btn-danger btn-sm" onclick="return confirm('Apakah Anda yakin ingin menghapus dokumen ini secara permanen?');" title="Hapus Dokumen">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </a>
+                                    <?php endif; ?>
                                     <a href="<?= base_url('riwayat/detail.php?id=' . $row['id']) ?>" class="btn btn-outline btn-sm">
                                         <i class="fa-solid fa-eye"></i> Detail
                                     </a>
