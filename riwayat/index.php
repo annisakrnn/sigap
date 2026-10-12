@@ -59,16 +59,23 @@ $page_title = "Riwayat & Arsip Berita Acara";
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
-<div style="margin-bottom:1.75rem; display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
-    <div>
-        <h1 style="font-size:1.65rem; font-weight:800; letter-spacing:-0.02em; margin-bottom:4px; color:var(--text-main);">Riwayat Berita Acara Gelar Alat</h1>
-        <p style="color:var(--text-muted); font-size:0.9rem;">
-            <?= ($user && $user['role'] === 'petugas') ? 'Daftar dokumen gelar alat yang pernah Anda laksanakan.' : 'Rekap seluruh laporan gelar alat dari seluruh regu & unit.' ?>
-        </p>
-    </div>
-    <a href="<?= base_url('inspeksi/index.php') ?>" class="btn btn-primary">
-        <i class="fa-solid fa-plus"></i> Gelar Alat Baru
+<div style="margin-bottom:1.5rem;">
+    <a href="<?= base_url('inspeksi/index.php') ?>" class="btn btn-outline btn-sm" style="margin-bottom:12px; display:inline-flex; align-items:center; gap:6px;">
+        <i class="fa-solid fa-arrow-left"></i> Kembali ke Form Gelar Alat
     </a>
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+        <div>
+            <h1 style="font-size:1.65rem; font-weight:800; letter-spacing:-0.02em; margin-bottom:4px; color:var(--text-main);">Riwayat Berita Acara Gelar Alat</h1>
+            <p style="color:var(--text-muted); font-size:0.9rem;">
+                <?= ($user && $user['role'] === 'petugas') ? 'Daftar dokumen gelar alat yang pernah Anda laksanakan.' : 'Rekap seluruh laporan gelar alat dari seluruh regu & unit.' ?>
+            </p>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a href="<?= base_url('inspeksi/index.php') ?>" class="btn btn-primary" style="display:inline-flex; align-items:center; gap:6px;">
+                <i class="fa-solid fa-plus"></i> Gelar Alat Baru
+            </a>
+        </div>
+    </div>
 </div>
 
 <!-- Filter Form -->

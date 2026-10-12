@@ -224,11 +224,14 @@ if ($user && $user['role'] === 'manajemen') {
             <div style="font-size:0.725rem; color:var(--text-muted); line-height:1.1;">Digitalisasi Gelar Alat & K3 &middot; PLN ULP Balong</div>
         </div>
     </div>
-    <div style="display:flex; align-items:center; gap:10px;">
-        <span class="badge" style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; font-size:0.72rem; padding:4px 10px;">
-            <i class="fa-solid fa-clipboard-check"></i> Mode Petugas Lapangan
-        </span>
-        <a href="<?= base_url('auth/login.php') ?>" class="btn btn-outline btn-sm" style="font-size:0.8rem; padding:6px 14px; border-radius:var(--radius-md); display:inline-flex; align-items:center; gap:6px;">
+    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <a href="<?= base_url('inspeksi/index.php') ?>" class="btn btn-sm <?= strpos($_SERVER['REQUEST_URI'], '/inspeksi') !== false ? 'btn-primary' : 'btn-outline' ?>" style="font-size:0.8rem; padding:6px 12px; border-radius:var(--radius-md); display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-clipboard-check"></i> Form Gelar Alat
+        </a>
+        <a href="<?= base_url('riwayat/index.php') ?>" class="btn btn-sm <?= strpos($_SERVER['REQUEST_URI'], '/riwayat') !== false ? 'btn-primary' : 'btn-outline' ?>" style="font-size:0.8rem; padding:6px 12px; border-radius:var(--radius-md); display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-clock-rotate-left"></i> Riwayat Arsip
+        </a>
+        <a href="<?= base_url('auth/login.php') ?>" class="btn btn-outline btn-sm" style="font-size:0.8rem; padding:6px 12px; border-radius:var(--radius-md); display:inline-flex; align-items:center; gap:6px; margin-left:4px;">
             <i class="fa-solid fa-lock"></i> Login Manajemen
         </a>
     </div>
