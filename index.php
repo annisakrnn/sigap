@@ -16,11 +16,10 @@ if (is_logged_in()) {
     if ($user['role'] === 'manajemen') {
         header("Location: " . base_url('dashboard/index.php'));
         exit;
-    } else {
-        header("Location: " . base_url('inspeksi/index.php'));
-        exit;
     }
-} else {
-    header("Location: " . base_url('auth/login.php'));
-    exit;
 }
+
+// Tamu / Petugas Lapangan langsung diarahkan ke form inspeksi terbuka
+header("Location: " . base_url('inspeksi/index.php'));
+exit;
+

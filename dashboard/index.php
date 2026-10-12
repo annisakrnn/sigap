@@ -53,7 +53,7 @@ $pending_list = $stmt_pending->fetchAll();
 // ===== Red Flag: Alat Rusak Terbaru (belum diperbaiki) =====
 $stmt_rf = $pdo->query("
     SELECT d.id AS detail_id, d.nama_barang_snapshot, d.kondisi, d.keterangan, d.foto_temuan,
-           d.sudah_diperbaiki,
+           d.sudah_diperbaiki, d.foto_perbaikan, d.catatan_perbaikan, d.tgl_diperbaiki,
            h.tanggal_inspeksi, h.jenis_pekerjaan, h.id AS header_id,
            r.nama_regu
     FROM gelar_alat_detail d
@@ -61,7 +61,7 @@ $stmt_rf = $pdo->query("
     JOIN regu r ON h.regu_id = r.id
     WHERE d.kondisi IN ('rusak','waktu_ganti')
     ORDER BY d.sudah_diperbaiki ASC, h.created_at DESC
-    LIMIT 20
+    LIMIT 30
 ");
 $red_flags = $stmt_rf->fetchAll();
 
@@ -207,12 +207,29 @@ require_once __DIR__ . '/../includes/header.php';
 
     <!-- ===== Red Flag Alert: Alat Rusak ===== -->
     <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">
-                <i class="fa-solid fa-triangle-exclamation" style="color:#dc2626;"></i> Alert K3 &ndash; Temuan Kerusakan
-            </h2>
-            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:500;">Perlu Tindak Lanjut</span>
+        <div class="card-header" style="flex-wrap:wrap; gap:8px;">
+            <div>
+                <h2 class="card-title">
+                    <i class="fa-solid fa-triangle-exclamation" style="color:#dc2626;"></i> Alert K3 &ndash; Temuan Kerusakan
+                </h2>
+                <span style="font-size:0.75rem; color:var(--text-muted); font-weight:500;">Monitoring Tindak Lanjut Perbaikan</span>
+            </div>
+            <!-- Filter Tabs -->
+            <div style="display:flex; gap:4px;">
+                <button type="button" class="btn btn-sm rf-tab active" id="tabRfAll" onclick="filterRfStatus('all')" style="font-size:0.75rem; padding:3px 9px; border-radius:6px;">Semua</button>
+                <button type="button" class="btn btn-sm rf-tab" id="tabRfPending" onclick="filterRfStatus('pending')" style="font-size:0.75rem; padding:3px 9px; border-radius:6px; color:#b91c1c;">Belum Selesai</button>
+                <button type="button" class="btn btn-sm rf-tab" id="tabRfDone" onclick="filterRfStatus('done')" style="font-size:0.75rem; padding:3px 9px; border-radius:6px; color:#15803d;">Selesai</button>
+            </div>
         </div>
+
+        <!-- Quick Live Search Red Flags -->
+        <div style="padding:0 0 10px 0;">
+            <div style="position:relative;">
+                <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.8rem;"></i>
+                <input type="text" id="searchRfInput" oninput="searchRfItems()" placeholder="Cari alat rusak atau nama regu..." class="form-control" style="padding-left:32px; font-size:0.825rem; height:34px;">
+            </div>
+        </div>
+
         <?php if (empty($red_flags)): ?>
             <div style="text-align:center; color:var(--text-muted); padding:2rem 1rem; font-size:0.875rem;">
                 <div style="width:44px; height:44px; border-radius:50%; background:#f0fdf4; color:#16a34a; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-size:1.2rem;">
@@ -222,9 +239,13 @@ require_once __DIR__ . '/../includes/header.php';
                 <p style="font-size:0.8rem; margin-top:2px;">Tidak ada temuan alat kerja atau APD rusak yang tercatat.</p>
             </div>
         <?php else: ?>
-            <div style="max-height:420px; overflow-y:auto;" id="redFlagList">
+            <div style="max-height:440px; overflow-y:auto;" id="redFlagList">
                 <?php foreach ($red_flags as $rf): ?>
-                    <div class="rf-item <?= $rf['sudah_diperbaiki'] ? 'rf-done' : '' ?>" id="rf-<?= $rf['detail_id'] ?>" style="background:<?= $rf['sudah_diperbaiki'] ? '#f0fdf4' : ($rf['kondisi'] === 'rusak' ? '#fef2f2' : '#fffbeb') ?>; border:1px solid <?= $rf['sudah_diperbaiki'] ? '#bbf7d0' : ($rf['kondisi'] === 'rusak' ? '#fecaca' : '#fde68a') ?>;">
+                    <div class="rf-item <?= $rf['sudah_diperbaiki'] ? 'rf-done' : '' ?>" 
+                         id="rf-<?= $rf['detail_id'] ?>" 
+                         data-status="<?= $rf['sudah_diperbaiki'] ? 'done' : 'pending' ?>"
+                         data-search="<?= strtolower(htmlspecialchars($rf['nama_barang_snapshot'] . ' ' . $rf['nama_regu'] . ' ' . (isset($rf['keterangan']) ? $rf['keterangan'] : ''))) ?>"
+                         style="background:<?= $rf['sudah_diperbaiki'] ? '#f0fdf4' : ($rf['kondisi'] === 'rusak' ? '#fef2f2' : '#fffbeb') ?>; border:1px solid <?= $rf['sudah_diperbaiki'] ? '#bbf7d0' : ($rf['kondisi'] === 'rusak' ? '#fecaca' : '#fde68a') ?>;">
                         <!-- Icon/Foto -->
                         <?php if (!empty($rf['foto_temuan'])): ?>
                             <img src="<?= base_url('uploads/foto_temuan/' . htmlspecialchars($rf['foto_temuan'])) ?>" 
@@ -246,6 +267,20 @@ require_once __DIR__ . '/../includes/header.php';
                             <?php if (!empty($rf['keterangan'])): ?>
                                 <div style="font-size:0.75rem; color:var(--text-body); margin-top:3px; background:rgba(255,255,255,0.6); padding:2px 6px; border-radius:4px; display:inline-block;">
                                     <?= htmlspecialchars($rf['keterangan']) ?>
+                                </div>
+                            <?php endif; ?>
+
+                            <!-- Foto Bukti & Catatan Perbaikan jika sudah selesai -->
+                            <?php if ($rf['sudah_diperbaiki']): ?>
+                                <div style="margin-top:4px; font-size:0.75rem; color:#166534; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                    <?php if (!empty($rf['foto_perbaikan'])): ?>
+                                        <a href="<?= base_url('uploads/perbaikan/' . htmlspecialchars($rf['foto_perbaikan'])) ?>" target="_blank" style="color:#047857; text-decoration:underline; font-weight:600; display:inline-flex; align-items:center; gap:3px;">
+                                            <i class="fa-solid fa-camera"></i> Bukti Foto
+                                        </a>
+                                    <?php endif; ?>
+                                    <?php if (!empty($rf['catatan_perbaikan'])): ?>
+                                        <span style="color:#15803d; font-style:italic;">&ldquo;<?= htmlspecialchars($rf['catatan_perbaikan']) ?>&rdquo;</span>
+                                    <?php endif; ?>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -313,22 +348,35 @@ require_once __DIR__ . '/../includes/header.php';
 
 <!-- ===== Modal Konfirmasi Selesai Diperbaiki ===== -->
 <div id="doneModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,0.6); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); align-items:center; justify-content:center;">
-    <div style="background:#ffffff; border-radius:var(--radius-xl); padding:2rem; max-width:440px; width:90%; box-shadow:var(--shadow-xl); animation:modalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);">
-        <div style="text-align:center; margin-bottom:1.5rem;">
-            <div style="width:54px; height:54px; background:#f0fdf4; border-radius:var(--radius-lg); display:flex; align-items:center; justify-content:center; margin:0 auto 12px; font-size:1.5rem; color:#16a34a; box-shadow:0 4px 12px rgba(22,163,74,0.15);">
+    <div style="background:#ffffff; border-radius:var(--radius-xl); padding:2rem; max-width:460px; width:90%; box-shadow:var(--shadow-xl); animation:modalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);">
+        <div style="text-align:center; margin-bottom:1.25rem;">
+            <div style="width:52px; height:52px; background:#f0fdf4; border-radius:var(--radius-lg); display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-size:1.4rem; color:#16a34a; box-shadow:0 4px 12px rgba(22,163,74,0.15);">
                 <i class="fa-solid fa-screwdriver-wrench"></i>
             </div>
-            <h3 style="font-size:1.15rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Tandai Selesai Diperbaiki?</h3>
+            <h3 style="font-size:1.15rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Tandai Selesai Diperbaiki / Diganti</h3>
             <p style="font-size:0.85rem; color:var(--text-muted);">Alat: <strong id="doneItemName" style="color:var(--text-main);"></strong></p>
         </div>
-        <div class="form-group" style="margin-bottom:1.25rem;">
-            <label class="form-label" for="catatanPerbaikan">Catatan Perbaikan <span style="font-weight:400; color:var(--text-muted);">(opsional)</span></label>
-            <textarea id="catatanPerbaikan" class="form-control" rows="3" placeholder="Contoh: Diganti unit baru dari gudang, sudah diuji..."></textarea>
+
+        <div class="form-group" style="margin-bottom:1rem;">
+            <label class="form-label" for="catatanPerbaikan">Catatan Tindakan Perbaikan <span style="font-weight:400; color:var(--text-muted);">(opsional)</span></label>
+            <textarea id="catatanPerbaikan" class="form-control" rows="2" placeholder="Contoh: Diganti unit baru dari gudang, sudah diuji kelaikannya..."></textarea>
         </div>
-        <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:var(--radius-md); padding:10px 14px; font-size:0.8rem; color:#b45309; margin-bottom:1.5rem; display:flex; align-items:flex-start; gap:8px;">
+
+        <div class="form-group" style="margin-bottom:1.25rem;">
+            <label class="form-label" for="fotoPerbaikanInput">Foto Bukti Perbaikan / Penggantian <span style="font-weight:400; color:var(--text-muted);">(opsional)</span></label>
+            <input type="file" id="fotoPerbaikanInput" class="form-control" accept="image/*">
+            <small style="color:var(--text-muted); font-size:0.75rem;">Unggah foto fisik alat yang baru / sudah selesai diservis (JPG/PNG/WEBP).</small>
+            <div id="previewFotoPerbaikan" style="display:none; margin-top:8px;">
+                <img id="imgFotoPerbaikan" style="max-height:65px; border-radius:6px; border:2px solid #10b981;">
+                <span id="badgeFotoPerbaikan" style="font-size:0.75rem; color:#047857; margin-left:8px;"></span>
+            </div>
+        </div>
+
+        <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:var(--radius-md); padding:8px 12px; font-size:0.78rem; color:#b45309; margin-bottom:1.25rem; display:flex; align-items:flex-start; gap:8px;">
             <i class="fa-solid fa-bell" style="margin-top:2px;"></i>
             <span>Notifikasi otomatis akan dikirim ke <strong>petugas pemeriksa</strong> yang melaporkan temuan ini.</span>
         </div>
+
         <div style="display:flex; gap:10px;">
             <button onclick="closeDoneModal()" class="btn btn-outline" style="flex:1;">Batal</button>
             <button onclick="submitDone()" class="btn btn-success" style="flex:1;" id="btnSubmitDone">
@@ -344,26 +392,92 @@ require_once __DIR__ . '/../includes/header.php';
     to   { opacity:1; transform:scale(1) translateY(0); }
 }
 .rf-done {
-    opacity:0.75;
+    opacity:0.85;
 }
 #doneModal.show {
     display:flex !important;
 }
+.rf-tab {
+    background:#f1f5f9;
+    color:var(--text-muted);
+    border:1px solid var(--border-color);
+}
+.rf-tab.active {
+    background:var(--primary);
+    color:white !important;
+    border-color:var(--primary);
+}
 </style>
 
+<script src="<?= base_url('assets/js/image-compress.js') ?>"></script>
 <script>
 let _doneDetailId = null;
+let _activeRfFilter = 'all';
 
+// Live Search Red Flags
+function searchRfItems() {
+    const query = document.getElementById('searchRfInput').value.toLowerCase().trim();
+    applyRfFilters(query, _activeRfFilter);
+}
+
+// Tab Filter Status
+function filterRfStatus(status) {
+    _activeRfFilter = status;
+    document.querySelectorAll('.rf-tab').forEach(b => b.classList.remove('active'));
+    if (status === 'all') document.getElementById('tabRfAll').classList.add('active');
+    if (status === 'pending') document.getElementById('tabRfPending').classList.add('active');
+    if (status === 'done') document.getElementById('tabRfDone').classList.add('active');
+
+    const query = document.getElementById('searchRfInput').value.toLowerCase().trim();
+    applyRfFilters(query, status);
+}
+
+function applyRfFilters(query, status) {
+    const items = document.querySelectorAll('#redFlagList .rf-item');
+    items.forEach(el => {
+        const itemStatus = el.dataset.status;
+        const itemSearch = el.dataset.search || '';
+        const matchStatus = (status === 'all' || itemStatus === status);
+        const matchQuery  = (!query || itemSearch.includes(query));
+
+        el.style.display = (matchStatus && matchQuery) ? 'flex' : 'none';
+    });
+}
+
+// Modal Done Handling
 function showDoneModal(detailId, namaBarang) {
     _doneDetailId = detailId;
     document.getElementById('doneItemName').textContent = namaBarang;
     document.getElementById('catatanPerbaikan').value = '';
+    const fileInput = document.getElementById('fotoPerbaikanInput');
+    fileInput.value = '';
+    document.getElementById('previewFotoPerbaikan').style.display = 'none';
     document.getElementById('doneModal').classList.add('show');
 }
+
 function closeDoneModal() {
     document.getElementById('doneModal').classList.remove('show');
     _doneDetailId = null;
 }
+
+// Image preview & compression for perbaikan
+document.getElementById('fotoPerbaikanInput')?.addEventListener('change', async function() {
+    if (this.files[0]) {
+        const file = this.files[0];
+        try {
+            const compressed = await window.ImageCompressor.compress(file, { maxDimension: 1280, quality: 0.8 });
+            const dt = new DataTransfer();
+            dt.items.add(compressed);
+            this.files = dt.files;
+            document.getElementById('imgFotoPerbaikan').src = URL.createObjectURL(compressed);
+            document.getElementById('badgeFotoPerbaikan').textContent = 'Foto siap (' + Math.round(compressed.size/1024) + ' KB)';
+            document.getElementById('previewFotoPerbaikan').style.display = 'flex';
+        } catch(e) {
+            document.getElementById('imgFotoPerbaikan').src = URL.createObjectURL(file);
+            document.getElementById('previewFotoPerbaikan').style.display = 'flex';
+        }
+    }
+});
 
 async function submitDone() {
     if (!_doneDetailId) return;
@@ -373,29 +487,50 @@ async function submitDone() {
 
     const catatan = document.getElementById('catatanPerbaikan').value.trim();
     const formData = new FormData();
+    formData.append('csrf_token', '<?= csrf_token() ?>');
     formData.append('detail_id', _doneDetailId);
     formData.append('catatan_perbaikan', catatan);
+
+    const fileInput = document.getElementById('fotoPerbaikanInput');
+    if (fileInput && fileInput.files[0]) {
+        formData.append('foto_perbaikan', fileInput.files[0]);
+    }
 
     try {
         const resp = await fetch('<?= base_url('dashboard/mark_done.php') ?>', {
             method: 'POST',
             body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         });
         const data = await resp.json();
 
         if (data.ok) {
             closeDoneModal();
-            // Animasi item berubah jadi "selesai"
+            // Update elemen di list
             const item = document.getElementById('rf-' + _doneDetailId);
             if (item) {
                 item.style.background = '#f0fdf4';
                 item.style.border = '1px solid #bbf7d0';
+                item.dataset.status = 'done';
                 const btnDone = item.querySelector('.btn-done-rf');
                 if (btnDone) {
                     btnDone.parentElement.innerHTML =
                         '<span class="badge" style="background:#dcfce7;color:#166534;border:1px solid #bbf7d0;"><i class="fa-solid fa-circle-check"></i> Selesai</span>';
                 }
                 item.classList.add('rf-done');
+
+                // Jika ada foto perbaikan, tambahkan link
+                if (data.foto_perbaikan) {
+                    const infoDiv = item.children[1];
+                    if (infoDiv) {
+                        const linkEl = document.createElement('div');
+                        linkEl.style.cssText = 'margin-top:4px; font-size:0.75rem;';
+                        linkEl.innerHTML = `<a href="${data.foto_perbaikan}" target="_blank" style="color:#047857; text-decoration:underline; font-weight:600;"><i class="fa-solid fa-camera"></i> Bukti Foto</a>`;
+                        infoDiv.appendChild(linkEl);
+                    }
+                }
             }
             showToast('✅ ' + data.pesan, 'sukses');
         } else {
@@ -405,7 +540,7 @@ async function submitDone() {
         showToast('❌ Gagal terhubung ke server.', 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> Selesai Diperbaiki';
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Simpan Selesai';
     }
 }
 

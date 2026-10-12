@@ -4,6 +4,7 @@
  * SIGAP - Role: Manajemen
  */
 require_once __DIR__ . '/../../includes/auth_check.php';
+require_once __DIR__ . '/../../includes/upload_helper.php';
 require_role('manajemen');
 
 $pdo = get_db_connection();
@@ -11,35 +12,26 @@ if (!$pdo) { header("Location: ../../setup.php"); exit; }
 
 $user = get_logged_user();
 
-// Ensure upload directory exists
-$upload_dir = __DIR__ . '/../../uploads/referensi/';
-if (!is_dir($upload_dir)) {
-    @mkdir($upload_dir, 0777, true);
-}
-
 // Handle POST (Create, Update, Delete)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
+    require_csrf();
+    $action = isset($_POST['action']) ? $_POST['action'] : '';
 
-    // Upload helper
-    $handle_upload = function($file_input_name) use ($upload_dir) {
+    // Upload helper aman
+    $handle_upload = function($file_input_name) {
         if (!empty($_FILES[$file_input_name]['name']) && $_FILES[$file_input_name]['error'] === UPLOAD_ERR_OK) {
-            $ext = strtolower(pathinfo($_FILES[$file_input_name]['name'], PATHINFO_EXTENSION));
-            $allowed = ['jpg', 'jpeg', 'png', 'webp'];
-            if (in_array($ext, $allowed)) {
-                $filename = 'alat_' . time() . '_' . uniqid() . '.' . $ext;
-                if (move_uploaded_file($_FILES[$file_input_name]['tmp_name'], $upload_dir . $filename)) {
-                    return $filename;
-                }
+            $up = secure_upload_image($_FILES[$file_input_name], 'referensi', 'alat');
+            if ($up['success']) {
+                return $up['filename'];
             }
         }
         return null;
     };
 
     if ($action === 'create') {
-        $nama_barang    = trim($_POST['nama_barang'] ?? '');
-        $kategori       = trim($_POST['kategori'] ?? '');
-        $satuan_default = trim($_POST['satuan_default'] ?? 'Bh');
+        $nama_barang    = trim(isset($_POST['nama_barang']) ? $_POST['nama_barang'] : '');
+        $kategori       = trim(isset($_POST['kategori']) ? $_POST['kategori'] : '');
+        $satuan_default = trim(isset($_POST['satuan_default']) ? $_POST['satuan_default'] : 'Bh');
 
         if (empty($nama_barang) || empty($kategori) || empty($satuan_default)) {
             set_flash('error', 'Semua kolom wajib diisi.');
@@ -59,10 +51,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'update') {
-        $id             = intval($_POST['id'] ?? 0);
-        $nama_barang    = trim($_POST['nama_barang'] ?? '');
-        $kategori       = trim($_POST['kategori'] ?? '');
-        $satuan_default = trim($_POST['satuan_default'] ?? 'Bh');
+        $id             = intval(isset($_POST['id']) ? $_POST['id'] : 0);
+        $nama_barang    = trim(isset($_POST['nama_barang']) ? $_POST['nama_barang'] : '');
+        $kategori       = trim(isset($_POST['kategori']) ? $_POST['kategori'] : '');
+        $satuan_default = trim(isset($_POST['satuan_default']) ? $_POST['satuan_default'] : 'Bh');
 
         if ($id <= 0 || empty($nama_barang) || empty($kategori) || empty($satuan_default)) {
             set_flash('error', 'Data tidak valid.');
@@ -93,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'delete') {
-        $id = intval($_POST['id'] ?? 0);
+        $id = intval(isset($_POST['id']) ? $_POST['id'] : 0);
         if ($id > 0) {
             // Cek keterkaitan dengan detail pemeriksaan
             $stmt_check = $pdo->prepare("SELECT COUNT(*) FROM gelar_alat_detail WHERE master_barang_id = :id");
@@ -114,8 +106,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Filter query
-$filter_kategori = $_GET['kategori'] ?? '';
-$search          = trim($_GET['q'] ?? '');
+$filter_kategori = isset($_GET['kategori']) ? $_GET['kategori'] : '';
+$search          = trim(isset($_GET['q']) ? $_GET['q'] : '');
 
 $where = [];
 $params = [];
@@ -229,7 +221,7 @@ require_once __DIR__ . '/../../includes/header.php';
                 </thead>
                 <tbody>
                     <?php foreach ($barang_list as $i => $row): ?>
-                        <?php $kat_info = $kategori_labels[$row['kategori']] ?? ['label' => $row['kategori'], 'icon' => 'fa-tag', 'class' => 'badge-draft']; ?>
+                        <?php $kat_info = isset($kategori_labels[$row['kategori']]) ? $kategori_labels[$row['kategori']] : ['label' => $row['kategori'], 'icon' => 'fa-tag', 'class' => 'badge-draft']; ?>
                         <tr>
                             <td style="color:var(--text-muted); font-size:0.8rem;"><?= $i + 1 ?></td>
                             <td>
@@ -292,6 +284,7 @@ require_once __DIR__ . '/../../includes/header.php';
         </div>
 
         <form method="POST" id="formBarang" enctype="multipart/form-data">
+            <?= csrf_field() ?>
             <input type="hidden" name="action" id="formAction" value="create">
             <input type="hidden" name="id" id="barangId" value="">
 
@@ -348,6 +341,7 @@ require_once __DIR__ . '/../../includes/header.php';
         </p>
 
         <form method="POST">
+            <?= csrf_field() ?>
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="id" id="hapusId" value="">
             <div style="display:flex; gap:10px;">

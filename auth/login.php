@@ -26,8 +26,9 @@ $error_msg = '';
 
 // Handle POST Login
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username'] ?? '');
-    $password = trim($_POST['password'] ?? '');
+    require_csrf();
+    $username = trim(isset($_POST['username']) ? $_POST['username'] : '');
+    $password = trim(isset($_POST['password']) ? $_POST['password'] : '');
 
     if (empty($username) || empty($password)) {
         $error_msg = "Silakan masukkan username dan password.";
@@ -37,6 +38,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password_hash'])) {
+            // Prevent Session Fixation
+            session_regenerate_id(true);
+
             // Set Session
             $_SESSION['user_id']      = $user['id'];
             $_SESSION['username']     = $user['username'];
@@ -200,6 +204,7 @@ if (isset($_GET['demo']) && $pdo) {
     <?php endif; ?>
 
     <form method="POST" action="">
+        <?= csrf_field() ?>
         <div class="form-group">
             <label class="form-label" for="username">Username</label>
             <input type="text" id="username" name="username" class="form-control" placeholder="Contoh: petugas_yandal / manager_balong" required autofocus>
@@ -211,13 +216,19 @@ if (isset($_GET['demo']) && $pdo) {
         </div>
 
         <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 6px;">
-            <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Sistem
+            <i class="fa-solid fa-right-to-bracket"></i> Masuk (Khusus Manajemen)
         </button>
     </form>
 
-    <div style="text-align: center; margin-top: 18px;">
-        <a href="<?= base_url('setup.php') ?>" style="font-size: 0.8rem; color: var(--text-muted); transition: color 0.15s;">
-            <i class="fa-solid fa-gear" style="margin-right:4px;"></i> Reset / Setup Database Ulang
+    <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border-light); text-align: center;">
+        <a href="<?= base_url('inspeksi/index.php') ?>" class="btn btn-outline" style="width: 100%; font-size: 0.85rem; padding: 9px 12px; display: inline-flex; justify-content: center; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-clipboard-check" style="color:var(--primary);"></i> Form Gelar Alat Petugas (Tanpa Login) &rarr;
+        </a>
+    </div>
+
+    <div style="text-align: center; margin-top: 14px;">
+        <a href="<?= base_url('setup.php') ?>" style="font-size: 0.775rem; color: var(--text-muted); transition: color 0.15s;">
+            <i class="fa-solid fa-gear" style="margin-right:4px;"></i> Setup / Reset Database
         </a>
     </div>
 </div>

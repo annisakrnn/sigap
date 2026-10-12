@@ -4,7 +4,6 @@
  * SIGAP
  */
 require_once __DIR__ . '/../includes/auth_check.php';
-require_role('petugas');
 
 $pdo = get_db_connection();
 if (!$pdo) {
@@ -24,14 +23,22 @@ foreach ($all_regus as $r) {
     $regu_by_jenis[$r['jenis_pekerjaan']][] = $r;
 }
 
-// Ambil riwayat gelar alat terakhir oleh petugas ini
-$stmt_hist = $pdo->prepare("SELECT h.*, r.nama_regu, r.nopol 
-    FROM gelar_alat_header h 
-    JOIN regu r ON h.regu_id = r.id 
-    WHERE h.petugas_id = :pid 
-    ORDER BY h.created_at DESC LIMIT 5");
-$stmt_hist->execute([':pid' => $user['id']]);
+// Ambil riwayat gelar alat terakhir (milik user login atau 5 laporan terakhir publik)
+if ($user && $user['role'] === 'petugas') {
+    $stmt_hist = $pdo->prepare("SELECT h.*, r.nama_regu, r.nopol 
+        FROM gelar_alat_header h 
+        JOIN regu r ON h.regu_id = r.id 
+        WHERE h.petugas_id = :pid 
+        ORDER BY h.created_at DESC LIMIT 5");
+    $stmt_hist->execute([':pid' => $user['id']]);
+} else {
+    $stmt_hist = $pdo->query("SELECT h.*, r.nama_regu, r.nopol 
+        FROM gelar_alat_header h 
+        JOIN regu r ON h.regu_id = r.id 
+        ORDER BY h.created_at DESC LIMIT 5");
+}
 $recent_inspections = $stmt_hist->fetchAll();
+
 
 $page_title = "Form Gelar Alat";
 require_once __DIR__ . '/../includes/header.php';
@@ -73,7 +80,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <div class="form-group" style="margin-bottom: 0.85rem;">
                     <label class="form-label" style="font-size:0.8rem;">Pilih Regu:</label>
                     <select name="regu_id" class="form-control" required style="font-size: 0.85rem;">
-                        <?php foreach (($regu_by_jenis['p2tl'] ?? []) as $r): ?>
+                        <?php foreach ((isset($regu_by_jenis['p2tl']) ? $regu_by_jenis['p2tl'] : []) as $r): ?>
                             <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['nama_regu']) ?></option>
                         <?php endforeach; ?>
                     </select>
@@ -107,7 +114,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <div class="form-group" style="margin-bottom: 0.85rem;">
                     <label class="form-label" style="font-size:0.8rem;">Pilih Regu:</label>
                     <select name="regu_id" class="form-control" required style="font-size: 0.85rem;">
-                        <?php foreach (($regu_by_jenis['sr_app'] ?? []) as $r): ?>
+                        <?php foreach ((isset($regu_by_jenis['sr_app']) ? $regu_by_jenis['sr_app'] : []) as $r): ?>
                             <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['nama_regu']) ?></option>
                         <?php endforeach; ?>
                     </select>
@@ -141,8 +148,8 @@ require_once __DIR__ . '/../includes/header.php';
                 <div class="form-group" style="margin-bottom: 0.85rem;">
                     <label class="form-label" style="font-size:0.8rem;">Pilih Regu:</label>
                     <select name="regu_id" class="form-control" required style="font-size: 0.85rem;">
-                        <?php foreach (($regu_by_jenis['yandal'] ?? []) as $r): ?>
-                            <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['nama_regu']) ?> (<?= htmlspecialchars($r['nopol'] ?? '-') ?>)</option>
+                        <?php foreach ((isset($regu_by_jenis['yandal']) ? $regu_by_jenis['yandal'] : []) as $r): ?>
+                            <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['nama_regu']) ?> (<?= htmlspecialchars(isset($r['nopol']) ? $r['nopol'] : '-') ?>)</option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -175,8 +182,8 @@ require_once __DIR__ . '/../includes/header.php';
                 <div class="form-group" style="margin-bottom: 0.85rem;">
                     <label class="form-label" style="font-size:0.8rem;">Pilih Regu:</label>
                     <select name="regu_id" class="form-control" required style="font-size: 0.85rem;">
-                        <?php foreach (($regu_by_jenis['har'] ?? []) as $r): ?>
-                            <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['nama_regu']) ?> (<?= htmlspecialchars($r['nopol'] ?? '-') ?>)</option>
+                        <?php foreach ((isset($regu_by_jenis['har']) ? $regu_by_jenis['har'] : []) as $r): ?>
+                            <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['nama_regu']) ?> (<?= htmlspecialchars(isset($r['nopol']) ? $r['nopol'] : '-') ?>)</option>
                         <?php endforeach; ?>
                     </select>
                 </div>

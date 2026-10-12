@@ -13,15 +13,16 @@ $current_user = get_logged_user();
 
 // Handle POST (Create, Update, Delete)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
+    require_csrf();
+    $action = isset($_POST['action']) ? $_POST['action'] : '';
 
     if ($action === 'create') {
-        $username     = strtolower(trim($_POST['username'] ?? ''));
-        $password     = $_POST['password'] ?? '';
-        $nama_lengkap = trim($_POST['nama_lengkap'] ?? '');
-        $role         = trim($_POST['role'] ?? 'petugas');
-        $jabatan      = trim($_POST['jabatan'] ?? '');
-        $no_hp        = trim($_POST['no_hp'] ?? '');
+        $username     = strtolower(trim(isset($_POST['username']) ? $_POST['username'] : ''));
+        $password     = isset($_POST['password']) ? $_POST['password'] : '';
+        $nama_lengkap = trim(isset($_POST['nama_lengkap']) ? $_POST['nama_lengkap'] : '');
+        $role         = trim(isset($_POST['role']) ? $_POST['role'] : 'petugas');
+        $jabatan      = trim(isset($_POST['jabatan']) ? $_POST['jabatan'] : '');
+        $no_hp        = trim(isset($_POST['no_hp']) ? $_POST['no_hp'] : '');
 
         if (empty($username) || empty($password) || empty($nama_lengkap) || empty($jabatan)) {
             set_flash('error', 'Semua kolom bertanda bintang (*) wajib diisi.');
@@ -57,13 +58,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'update') {
-        $id           = intval($_POST['id'] ?? 0);
-        $username     = strtolower(trim($_POST['username'] ?? ''));
-        $password     = $_POST['password'] ?? '';
-        $nama_lengkap = trim($_POST['nama_lengkap'] ?? '');
-        $role         = trim($_POST['role'] ?? 'petugas');
-        $jabatan      = trim($_POST['jabatan'] ?? '');
-        $no_hp        = trim($_POST['no_hp'] ?? '');
+        $id           = intval(isset($_POST['id']) ? $_POST['id'] : 0);
+        $username     = strtolower(trim(isset($_POST['username']) ? $_POST['username'] : ''));
+        $password     = isset($_POST['password']) ? $_POST['password'] : '';
+        $nama_lengkap = trim(isset($_POST['nama_lengkap']) ? $_POST['nama_lengkap'] : '');
+        $role         = trim(isset($_POST['role']) ? $_POST['role'] : 'petugas');
+        $jabatan      = trim(isset($_POST['jabatan']) ? $_POST['jabatan'] : '');
+        $no_hp        = trim(isset($_POST['no_hp']) ? $_POST['no_hp'] : '');
 
         if ($id <= 0 || empty($username) || empty($nama_lengkap) || empty($jabatan)) {
             set_flash('error', 'Data tidak valid.');
@@ -120,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'delete') {
-        $id = intval($_POST['id'] ?? 0);
+        $id = intval(isset($_POST['id']) ? $_POST['id'] : 0);
         if ($id <= 0) {
             set_flash('error', 'ID pengguna tidak valid.');
         } elseif ($id === (int)$current_user['id']) {
@@ -151,8 +152,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Filter query
-$filter_role = $_GET['role'] ?? '';
-$search      = trim($_GET['q'] ?? '');
+$filter_role = isset($_GET['role']) ? $_GET['role'] : '';
+$search      = trim(isset($_GET['q']) ? $_GET['q'] : '');
 
 $where = [];
 $params = [];
@@ -182,8 +183,8 @@ $users_list = $stmt->fetchAll();
 
 // Total count
 $stats_role = $pdo->query("SELECT role, COUNT(*) as jml FROM users GROUP BY role")->fetchAll(PDO::FETCH_KEY_PAIR);
-$total_petugas = $stats_role['petugas'] ?? 0;
-$total_manajemen = $stats_role['manajemen'] ?? 0;
+$total_petugas = isset($stats_role['petugas']) ? $stats_role['petugas'] : 0;
+$total_manajemen = isset($stats_role['manajemen']) ? $stats_role['manajemen'] : 0;
 
 $page_title = "Kelola Pengguna";
 require_once __DIR__ . '/../../includes/header.php';
@@ -372,6 +373,7 @@ require_once __DIR__ . '/../../includes/header.php';
         </div>
 
         <form method="POST" id="formUser">
+            <?= csrf_field() ?>
             <input type="hidden" name="action" id="formAction" value="create">
             <input type="hidden" name="id" id="userId" value="">
 
@@ -434,6 +436,7 @@ require_once __DIR__ . '/../../includes/header.php';
         </p>
 
         <form method="POST" id="formHapus">
+            <?= csrf_field() ?>
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="id" id="hapusId" value="">
             <div style="display:flex; gap:10px;">

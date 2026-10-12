@@ -10,49 +10,54 @@ Buka Laragon dan klik **Start All** (Apache + MySQL harus hijau ✓)
 ### 2. Setup Database (WAJIB, hanya 1 kali)
 Buka browser dan akses:
 ```
-http://localhost/gelar_alat/setup.php
+http://localhost/sigap/setup.php
 ```
 Halaman setup akan otomatis membuat database, semua tabel, dan data demo.
 
 ### 3. Buka Aplikasi
 ```
-http://localhost/gelar_alat/
+http://localhost/sigap/
 ```
+> **Catatan Alur Petugas Lapangan:**
+> Petugas pemeriksa di lapangan **tidak perlu login lagi**. Begitu membuka web, form pemilihan regu dan checklist peralatan langsung tampil. Petugas cukup mengisi nama pelaksana, centang kondisi alat, foto apel, dan tanda tangan digital.
+>
+> Login hanya diperuntukkan bagi **Manajemen Atasan / Approver** untuk mereview dan menyetujui laporan.
 
 ---
 
-## Akun Demo (Password Semua: 123456)
+## Akun Demo Manajemen (Password: 123456)
+Akses login: `http://localhost/sigap/auth/login.php`
 
-### 🔵 Role: Petugas Pemeriksa Alat
-| Username | Nama | Regu |
-|---|---|---|
-| `petugas_yandal` | Ropiko | Pelaksana Yandal ULP Balong |
-| `petugas_p2tl` | Sayitno | Pelaksana Lapangan P2TL |
-| `petugas_har` | Ahmad Fauzi | Pelaksana Pemeliharaan |
-| `petugas_sr` | Budi Santoso | Pelaksana SR APP 1 Phasa |
-
-### 🟡 Role: Manajemen Atasan (Approver)
-| Username | Nama | Jabatan |
-|---|---|---|
-| `manager_balong` | Yusuf Irfan | Manager ULP Balong |
-| `spv_yantek` | A. Kholid | SPV Yantek ULP Balong |
-| `tl_k3` | Bindraerda Hanindiawan | TL K3L dan KAM ULP Balong |
-| `tl_teknik` | Sofyan | TL Teknik ULP Balong |
+| Username | Nama | Jabatan | Role |
+|---|---|---|---|
+| `manager_balong` | Yusuf Irfan | Manager ULP Balong | Manajemen Approver |
+| `spv_yantek` | A. Kholid | SPV Yantek ULP Balong | Manajemen Approver |
+| `tl_k3` | Bindraerda Hanindiawan | TL K3L dan KAM ULP Balong | Manajemen Approver |
+| `tl_teknik` | Sofyan | TL Teknik ULP Balong | Manajemen Approver |
 
 ---
 
 ## Alur Penggunaan
 
-1. **Petugas login** → Pilih jenis regu → Isi checklist → Tanda tangan digital → Submit
-2. **Manajemen login** → Dashboard → Review laporan → Tanda tangan digital → Approve
-3. Laporan `APPROVED` → Cetak Berita Acara Resmi format A4 (siap print / save PDF)
+1. **Petugas Lapangan (Tanpa Login)**:
+   - Buka `http://localhost/sigap/`
+   - Pilih Jenis Pekerjaan (P2TL, YANDAL, HAR, SR APP) & Regu
+   - Isi Nama Pelaksana 1 & 2
+   - Isi checklist kelengkapan & kondisi alat, unggah foto kegiatan, dan bubuhkan tanda tangan digital
+   - Klik **Kirim Laporan ke Atasan**
+
+2. **Manajemen Atasan (Login)**:
+   - Buka `http://localhost/sigap/auth/login.php` (atau klik tombol *Login Manajemen* di pojok kanan atas)
+   - Buka **Dashboard K3** atau **Antrean Approval**
+   - Review laporan & foto kegiatan, bubuhkan tanda tangan digital manajemen, lalu klik **Setujui (Approve)**
+   - Dokumen langsung siap dicetak menjadi **Berita Acara Resmi (A4/PDF)**
 
 ---
 
 ## Struktur File Proyek
 
 ```
-gelar_alat/
+sigap/
 ├── index.php              # Entry point (redirect otomatis sesuai role)
 ├── setup.php              # Setup database & seeder (jalankan 1x)
 ├── config/

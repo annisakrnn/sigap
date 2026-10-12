@@ -10,7 +10,7 @@ $pdo = get_db_connection();
 if (!$pdo) { header("Location: ../setup.php"); exit; }
 
 $user = get_logged_user();
-$id = intval($_GET['id'] ?? 0);
+$id = intval(isset($_GET['id']) ? $_GET['id'] : 0);
 
 if (!$id) {
     set_flash('error', "Parameter tidak valid.");
@@ -80,9 +80,18 @@ $jenis_label = [
 
 // Hitung statistik temuan
 $total_items = count($all_details);
-$total_baik = count(array_filter($all_details, fn($d) => $d['kondisi'] === 'baik'));
-$total_rusak = count(array_filter($all_details, fn($d) => $d['kondisi'] === 'rusak'));
-$total_ganti = count(array_filter($all_details, fn($d) => $d['kondisi'] === 'waktu_ganti'));
+$total_baik = 0;
+$total_rusak = 0;
+$total_ganti = 0;
+foreach ($all_details as $d) {
+    if ($d['kondisi'] === 'baik') {
+        $total_baik++;
+    } elseif ($d['kondisi'] === 'rusak') {
+        $total_rusak++;
+    } elseif ($d['kondisi'] === 'waktu_ganti') {
+        $total_ganti++;
+    }
+}
 
 $page_title = "Review Laporan Gelar Alat #" . $id;
 require_once __DIR__ . '/../includes/header.php';
@@ -100,7 +109,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <span class="badge badge-<?= $header['status'] ?>" style="margin-left:8px;font-size:0.8rem;"><?= strtoupper($header['status']) ?></span>
             </h1>
             <p style="color:var(--text-muted);font-size:0.9rem;">
-                <?= htmlspecialchars($jenis_label[$header['jenis_pekerjaan']] ?? strtoupper($header['jenis_pekerjaan'])) ?>
+                <?= htmlspecialchars(isset($jenis_label[$header['jenis_pekerjaan']]) ? $jenis_label[$header['jenis_pekerjaan']] : strtoupper($header['jenis_pekerjaan'])) ?>
                 &mdash; <?= htmlspecialchars($header['nama_regu']) ?>
                 <?php if ($header['nopol']): ?>(<?= htmlspecialchars($header['nopol']) ?>)<?php endif; ?>
             </p>
@@ -139,12 +148,12 @@ require_once __DIR__ . '/../includes/header.php';
         <div>
             <h3 style="font-size:0.875rem;color:var(--text-muted);font-weight:600;margin-bottom:10px;text-transform:uppercase;">Informasi Inspeksi</h3>
             <table style="width:100%;font-size:0.875rem;">
-                <tr><td style="color:var(--text-muted);padding:3px 0;width:130px;">Nomor Dokumen</td><td><strong><?= htmlspecialchars($header['nomor_dokumen'] ?? '-') ?></strong></td></tr>
+                <tr><td style="color:var(--text-muted);padding:3px 0;width:130px;">Nomor Dokumen</td><td><strong><?= htmlspecialchars(isset($header['nomor_dokumen']) ? $header['nomor_dokumen'] : '-') ?></strong></td></tr>
                 <tr><td style="color:var(--text-muted);padding:3px 0;">Tanggal Apel</td><td><strong><?= date('d F Y', strtotime($header['tanggal_inspeksi'])) ?></strong></td></tr>
                 <tr><td style="color:var(--text-muted);padding:3px 0;">Bulan / Tahun</td><td><?= htmlspecialchars($header['bulan_tahun']) ?></td></tr>
                 <tr><td style="color:var(--text-muted);padding:3px 0;">Jenis Pekerjaan</td><td><?= strtoupper($header['jenis_pekerjaan']) ?></td></tr>
                 <tr><td style="color:var(--text-muted);padding:3px 0;">Regu</td><td><?= htmlspecialchars($header['nama_regu']) ?></td></tr>
-                <tr><td style="color:var(--text-muted);padding:3px 0;">Kendaraan / Nopol</td><td><?= htmlspecialchars($header['kendaraan'] ?? '-') ?> / <?= htmlspecialchars($header['nopol'] ?? '-') ?></td></tr>
+                <tr><td style="color:var(--text-muted);padding:3px 0;">Kendaraan / Nopol</td><td><?= htmlspecialchars(isset($header['kendaraan']) ? $header['kendaraan'] : '-') ?> / <?= htmlspecialchars(isset($header['nopol']) ? $header['nopol'] : '-') ?></td></tr>
             </table>
         </div>
         <div>
@@ -192,7 +201,7 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 
     <?php foreach ($details_by_cat as $cat_key => $cat_items): ?>
-        <?php $k = $kategori_labels[$cat_key] ?? ['label' => ucfirst($cat_key), 'icon' => 'fa-box', 'color' => '#666']; ?>
+        <?php $k = isset($kategori_labels[$cat_key]) ? $kategori_labels[$cat_key] : ['label' => ucfirst($cat_key), 'icon' => 'fa-box', 'color' => '#666']; ?>
         <div style="margin-bottom:1.25rem;">
             <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:<?= $k['color'] ?>15;border-radius:var(--radius-sm);margin-bottom:8px;border-left:3px solid <?= $k['color'] ?>;">
                 <i class="fa-solid <?= $k['icon'] ?>" style="color:<?= $k['color'] ?>;"></i>
@@ -224,10 +233,10 @@ require_once __DIR__ . '/../includes/header.php';
                                     </span>
                                 </td>
                                 <td>
-                                    <?php $kl = $kondisi_labels[$d['kondisi']] ?? ['label' => $d['kondisi'], 'class' => 'badge']; ?>
+                                    <?php $kl = isset($kondisi_labels[$d['kondisi']]) ? $kondisi_labels[$d['kondisi']] : ['label' => $d['kondisi'], 'class' => 'badge']; ?>
                                     <span class="<?= $kl['class'] ?>"><?= $kl['label'] ?></span>
                                 </td>
-                                <td style="font-size:0.8rem;color:var(--text-muted);"><?= htmlspecialchars($d['keterangan'] ?? '-') ?></td>
+                                <td style="font-size:0.8rem;color:var(--text-muted);"><?= htmlspecialchars(isset($d['keterangan']) ? $d['keterangan'] : '-') ?></td>
                                 <td>
                                     <?php if (!empty($d['foto_temuan'])): ?>
                                         <a href="<?= base_url('uploads/foto_temuan/' . htmlspecialchars($d['foto_temuan'])) ?>" target="_blank" onclick="event.preventDefault(); previewFoto('<?= base_url('uploads/foto_temuan/' . htmlspecialchars($d['foto_temuan'])) ?>', 'Temuan: <?= addslashes(htmlspecialchars($d['nama_barang_snapshot'])) ?>');">
@@ -257,6 +266,7 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 
     <form method="POST" action="proses.php" id="formApproval">
+        <?= csrf_field() ?>
         <input type="hidden" name="gelar_alat_id" value="<?= $id ?>">
         <input type="hidden" name="action" id="actionField" value="">
 
@@ -365,14 +375,14 @@ function submitDecision(action) {
         </div>
         <div>
             <div style="font-weight:700;color:#065f46;font-size:1.05rem;">Berita Acara Telah Disahkan</div>
-            <div style="font-size:0.8rem;color:#059669;"><?= date('d F Y, H:i', strtotime($header['tanggal_approval'] ?? $header['updated_at'])) ?></div>
+            <div style="font-size:0.8rem;color:#059669;"><?= date('d F Y, H:i', strtotime(!empty($header['tanggal_approval']) ? $header['tanggal_approval'] : $header['updated_at'])) ?></div>
         </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
         <div>
             <div style="font-size:0.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Disahkan Oleh:</div>
-            <div style="font-weight:700;"><?= htmlspecialchars($header['nama_pejabat_manajemen'] ?? '-') ?></div>
-            <div style="font-size:0.85rem;color:var(--text-muted);"><?= htmlspecialchars($header['jabatan_manajemen'] ?? '-') ?></div>
+            <div style="font-weight:700;"><?= htmlspecialchars(isset($header['nama_pejabat_manajemen']) ? $header['nama_pejabat_manajemen'] : '-') ?></div>
+            <div style="font-size:0.85rem;color:var(--text-muted);"><?= htmlspecialchars(isset($header['jabatan_manajemen']) ? $header['jabatan_manajemen'] : '-') ?></div>
             <?php if ($header['catatan_manajemen']): ?>
                 <div style="margin-top:8px;font-size:0.825rem;padding:8px;background:rgba(255,255,255,0.6);border-radius:6px;border-left:3px solid #10b981;">
                     <strong>Catatan Atasan:</strong><br>
@@ -396,13 +406,13 @@ function submitDecision(action) {
         </div>
         <div>
             <div style="font-weight:700;color:#991b1b;font-size:1.05rem;">Laporan Dikembalikan untuk Perbaikan (Rejected)</div>
-            <div style="font-size:0.8rem;color:#b91c1c;"><?= date('d F Y, H:i', strtotime($header['tanggal_approval'] ?? $header['updated_at'])) ?></div>
+            <div style="font-size:0.8rem;color:#b91c1c;"><?= date('d F Y, H:i', strtotime(!empty($header['tanggal_approval']) ? $header['tanggal_approval'] : $header['updated_at'])) ?></div>
         </div>
     </div>
     <div>
         <div style="font-size:0.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Catatan Arahan Perbaikan dari Manajemen:</div>
         <div style="font-size:0.875rem;padding:10px 14px;background:#fff;border-radius:6px;border-left:3px solid #ef4444;color:#7f1d1d;">
-            <?= nl2br(htmlspecialchars($header['catatan_manajemen'] ?? 'Tidak ada catatan khusus.')) ?>
+            <?= nl2br(htmlspecialchars(!empty($header['catatan_manajemen']) ? $header['catatan_manajemen'] : 'Tidak ada catatan khusus.')) ?>
         </div>
         <p style="font-size:0.8rem;color:var(--text-muted);margin-top:8px;">
             Menunggu petugas pemeriksa melakukan revisi data dan submit ulang dokumen ini.

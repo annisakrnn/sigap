@@ -4,7 +4,6 @@
  * SIGAP
  */
 require_once __DIR__ . '/../includes/auth_check.php';
-require_role('petugas');
 
 $pdo = get_db_connection();
 if (!$pdo) { header("Location: ../setup.php"); exit; }
@@ -12,13 +11,18 @@ if (!$pdo) { header("Location: ../setup.php"); exit; }
 $user = get_logged_user();
 
 // Cek mode edit / revisi
-$edit_id = intval($_GET['edit_id'] ?? 0);
+$edit_id = intval(isset($_GET['edit_id']) ? $_GET['edit_id'] : 0);
 $edit_header = null;
 $existing_details_map = [];
 
 if ($edit_id > 0) {
-    $stmt_edit = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id AND petugas_id = :uid LIMIT 1");
-    $stmt_edit->execute([':id' => $edit_id, ':uid' => $user['id']]);
+    if ($user) {
+        $stmt_edit = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id AND (petugas_id = :uid OR :is_mgr = 1) LIMIT 1");
+        $stmt_edit->execute([':id' => $edit_id, ':uid' => $user['id'], ':is_mgr' => ($user['role'] === 'manajemen' ? 1 : 0)]);
+    } else {
+        $stmt_edit = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id LIMIT 1");
+        $stmt_edit->execute([':id' => $edit_id]);
+    }
     $edit_header = $stmt_edit->fetch();
 
     if (!$edit_header) {
@@ -41,8 +45,9 @@ if ($edit_id > 0) {
     }
 } else {
     // Validasi parameter GET biasa
-    $jenis_pekerjaan = in_array($_GET['jenis'] ?? '', ['p2tl','sr_app','yandal','har']) ? $_GET['jenis'] : null;
-    $regu_id = intval($_GET['regu_id'] ?? 0);
+    $jenis_param = isset($_GET['jenis']) ? $_GET['jenis'] : '';
+    $jenis_pekerjaan = in_array($jenis_param, ['p2tl','sr_app','yandal','har']) ? $jenis_param : null;
+    $regu_id = intval(isset($_GET['regu_id']) ? $_GET['regu_id'] : 0);
 
     if (!$jenis_pekerjaan || !$regu_id) {
         set_flash('error', "Parameter tidak valid. Silakan pilih jenis gelar alat terlebih dahulu.");
@@ -103,7 +108,7 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
             <div>
                 <h3 style="font-size:1.05rem; font-weight:700; color:#991b1b; margin:0;">
-                    Mode Revisi Laporan: <?= htmlspecialchars($edit_header['nomor_dokumen'] ?? '#' . $edit_id) ?>
+                    Mode Revisi Laporan: <?= htmlspecialchars(isset($edit_header['nomor_dokumen']) ? $edit_header['nomor_dokumen'] : '#' . $edit_id) ?>
                 </h3>
                 <p style="font-size:0.825rem; color:#b91c1c; margin:2px 0 0;">
                     Laporan ini sebelumnya dikembalikan oleh Manajemen Atasan untuk perbaikan. Silakan sesuaikan data dan kirim ulang.
@@ -113,7 +118,7 @@ require_once __DIR__ . '/../includes/header.php';
         <div style="background:#fff; border-radius:6px; padding:10px 14px; border-left:4px solid #ef4444; margin-top:8px;">
             <strong style="font-size:0.8rem; text-transform:uppercase; color:#7f1d1d;">Catatan Arahan dari Manajemen:</strong>
             <p style="margin:4px 0 0; font-size:0.9rem; color:#1e293b;">
-                <?= nl2br(htmlspecialchars($edit_header['catatan_manajemen'] ?? '-')) ?>
+                <?= nl2br(htmlspecialchars(isset($edit_header['catatan_manajemen']) ? $edit_header['catatan_manajemen'] : '-')) ?>
             </p>
         </div>
     </div>
@@ -125,21 +130,43 @@ require_once __DIR__ . '/../includes/header.php';
     </a>
     <h1 style="font-size:1.5rem;margin-bottom:4px;">
         <i class="fa-solid fa-clipboard-check" style="color:var(--primary);margin-right:8px;"></i>
-        <?= $edit_id ? 'Revisi ' : 'Checklist ' ?><?= htmlspecialchars($jenis_label[$jenis_pekerjaan] ?? strtoupper($jenis_pekerjaan)) ?>
+        <?= $edit_id ? 'Revisi ' : 'Checklist ' ?><?= htmlspecialchars(isset($jenis_label[$jenis_pekerjaan]) ? $jenis_label[$jenis_pekerjaan] : strtoupper($jenis_pekerjaan)) ?>
     </h1>
     <p style="color:var(--text-muted);font-size:0.9rem;">
         <?= htmlspecialchars($regu['nama_regu']) ?>
         <?php if (!empty($regu['nopol'])): ?> &mdash; <strong><?= htmlspecialchars($regu['nopol']) ?></strong><?php endif; ?>
-        | <?= htmlspecialchars($regu['kendaraan'] ?? '') ?>
+        | <?= htmlspecialchars(isset($regu['kendaraan']) ? $regu['kendaraan'] : '') ?>
         <?php if ($edit_header): ?> &bull; No: <strong><?= htmlspecialchars($edit_header['nomor_dokumen']) ?></strong><?php endif; ?>
     </p>
 </div>
 
 <form method="POST" action="simpan.php" id="formGelarAlat" enctype="multipart/form-data">
+    <?= csrf_field() ?>
     <input type="hidden" name="jenis_pekerjaan" value="<?= htmlspecialchars($jenis_pekerjaan) ?>">
     <input type="hidden" name="regu_id" value="<?= $regu_id ?>">
     <input type="hidden" name="edit_id" value="<?= $edit_id ?>">
     <input type="hidden" name="action" id="inspeksiAction" value="submit">
+
+    <!-- Banner Pemulihan Draft Lokal Autosave -->
+    <div id="autosaveBanner" style="display:none; margin-bottom:1.25rem; background:#eff6ff; border:1px solid #bfdbfe; border-left:4px solid #3b82f6; border-radius:var(--radius-md); padding:12px 16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <i class="fa-solid fa-cloud-arrow-down" style="color:#2563eb; font-size:1.2rem;"></i>
+                <div>
+                    <strong style="color:#1e40af; font-size:0.875rem;">Draft Tersimpan Otomatis Terdeteksi!</strong>
+                    <div style="color:#3b82f6; font-size:0.775rem;" id="autosaveTime">Tersimpan dari sesi sebelumnya di perangkat ini.</div>
+                </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button type="button" onclick="restoreDraftData()" class="btn btn-sm btn-primary" style="padding:5px 12px; font-size:0.8rem;">
+                    <i class="fa-solid fa-rotate-left"></i> Pulihkan Draft
+                </button>
+                <button type="button" onclick="discardDraftData()" class="btn btn-sm btn-outline" style="padding:5px 10px; font-size:0.8rem; background:#fff;">
+                    Abaikan
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- ===== SECTION 1: Data Header ===== -->
     <div class="card" style="margin-bottom:1.25rem; border-left: 4px solid var(--primary);">
@@ -153,28 +180,28 @@ require_once __DIR__ . '/../includes/header.php';
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom:1rem;">
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Tanggal Apel Gelar Alat</label>
-                <input type="date" name="tanggal_inspeksi" class="form-control" value="<?= htmlspecialchars($edit_header['tanggal_inspeksi'] ?? date('Y-m-d')) ?>" required>
+                <input type="date" name="tanggal_inspeksi" class="form-control" value="<?= htmlspecialchars(isset($edit_header['tanggal_inspeksi']) ? $edit_header['tanggal_inspeksi'] : date('Y-m-d')) ?>" required>
             </div>
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Bulan / Tahun</label>
-                <input type="text" name="bulan_tahun" class="form-control" value="<?= htmlspecialchars($edit_header['bulan_tahun'] ?? date('F Y')) ?>" required>
+                <input type="text" name="bulan_tahun" class="form-control" value="<?= htmlspecialchars(isset($edit_header['bulan_tahun']) ? $edit_header['bulan_tahun'] : date('F Y')) ?>" required>
             </div>
         </div>
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom:1rem;">
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Nama Pelaksana / Pemeriksa 1 <span style="color:var(--danger);">*</span></label>
-                <input type="text" name="nama_pelaksana_1" class="form-control" value="<?= htmlspecialchars($edit_header['nama_pelaksana_1'] ?? $user['nama_lengkap']) ?>" required>
+                <input type="text" name="nama_pelaksana_1" class="form-control" value="<?= htmlspecialchars(isset($edit_header['nama_pelaksana_1']) ? $edit_header['nama_pelaksana_1'] : ($user ? $user['nama_lengkap'] : '')) ?>" placeholder="Ketik nama lengkap pemeriksa" required>
             </div>
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Nama Pelaksana 2 (jika ada)</label>
-                <input type="text" name="nama_pelaksana_2" class="form-control" value="<?= htmlspecialchars($edit_header['nama_pelaksana_2'] ?? '') ?>" placeholder="Opsional">
+                <input type="text" name="nama_pelaksana_2" class="form-control" value="<?= htmlspecialchars(isset($edit_header['nama_pelaksana_2']) ? $edit_header['nama_pelaksana_2'] : '') ?>" placeholder="Opsional">
             </div>
         </div>
 
         <div class="form-group" style="margin-bottom:0;">
             <label class="form-label">Pendamping / Administrasi (jika ada)</label>
-            <input type="text" name="pendamping_admin" class="form-control" value="<?= htmlspecialchars($edit_header['pendamping_admin'] ?? '') ?>" placeholder="Opsional">
+            <input type="text" name="pendamping_admin" class="form-control" value="<?= htmlspecialchars(isset($edit_header['pendamping_admin']) ? $edit_header['pendamping_admin'] : '') ?>" placeholder="Opsional">
         </div>
     </div>
 
@@ -191,7 +218,7 @@ require_once __DIR__ . '/../includes/header.php';
 
     <!-- ===== SECTION 3: Tabel Checklist Dinamis ===== -->
     <?php foreach ($items_by_kategori as $kategori_key => $items): ?>
-        <?php $k = $kategori_labels[$kategori_key] ?? ['label' => ucfirst($kategori_key), 'icon' => 'fa-box', 'color' => '#666']; ?>
+        <?php $k = isset($kategori_labels[$kategori_key]) ? $kategori_labels[$kategori_key] : ['label' => ucfirst($kategori_key), 'icon' => 'fa-box', 'color' => '#666']; ?>
         <div class="card" style="margin-bottom:1.25rem; border-top:3px solid <?= $k['color'] ?>;">
             <div class="card-header" style="margin-bottom:0;">
                 <h2 class="card-title" style="font-size:1.05rem; display:flex; align-items:center; gap:8px;">
@@ -220,7 +247,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <tbody>
                         <?php foreach ($items as $idx => $item): ?>
                             <?php
-                            $prev_d = $existing_details_map[$item['master_barang_id']] ?? null;
+                            $prev_d = isset($existing_details_map[$item['master_barang_id']]) ? $existing_details_map[$item['master_barang_id']] : null;
                             $realisasi_val = $prev_d ? $prev_d['jumlah_realisasi'] : $item['jumlah_standar'];
                             $kondisi_val = $prev_d ? $prev_d['kondisi'] : 'baik';
                             $keterangan_val = $prev_d ? $prev_d['keterangan'] : '';
@@ -296,7 +323,7 @@ require_once __DIR__ . '/../includes/header.php';
             <div id="cards_<?= $kategori_key ?>">
                 <?php foreach ($items as $idx => $item): ?>
                     <?php
-                    $prev_d = $existing_details_map[$item['master_barang_id']] ?? null;
+                    $prev_d = isset($existing_details_map[$item['master_barang_id']]) ? $existing_details_map[$item['master_barang_id']] : null;
                     $realisasi_val = $prev_d ? $prev_d['jumlah_realisasi'] : $item['jumlah_standar'];
                     $kondisi_val = $prev_d ? $prev_d['kondisi'] : 'baik';
                     $keterangan_val = $prev_d ? $prev_d['keterangan'] : '';
@@ -439,7 +466,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <i class="fa-solid fa-note-sticky" style="color:var(--accent);margin-right:6px;"></i> D. Catatan Umum
             </h2>
         </div>
-        <textarea name="catatan_umum" class="form-control" rows="3" placeholder="Catatan umum hasil gelar alat, temuan K3, atau tindak lanjut yang perlu diketahui..."><?= htmlspecialchars($edit_header['catatan_umum'] ?? '') ?></textarea>
+        <textarea name="catatan_umum" class="form-control" rows="3" placeholder="Catatan umum hasil gelar alat, temuan K3, atau tindak lanjut yang perlu diketahui..."><?= htmlspecialchars(isset($edit_header['catatan_umum']) ? $edit_header['catatan_umum'] : '') ?></textarea>
     </div>
 
     <!-- ===== Sticky Submit Bar ===== -->
@@ -463,15 +490,37 @@ require_once __DIR__ . '/../includes/header.php';
 
 </form>
 
+<script src="<?= base_url('assets/js/image-compress.js') ?>"></script>
 <script>
+const DRAFT_KEY = 'sigap_draft_<?= $jenis_pekerjaan ?>_<?= $regu_id ?>';
+const IS_EDIT_MODE = <?= $edit_id > 0 ? 'true' : 'false' ?>;
+
 // ========================================
-// Init Signature Pad
+// Init Signature Pad & Handlers
 // ========================================
 document.addEventListener('DOMContentLoaded', function() {
     const canvas = document.getElementById('canvasPetugas');
     const clearBtn = document.getElementById('clearPetugas');
     const hiddenInput = document.getElementById('ttdPetugas');
     window.sigPad = new SimpleSignaturePad(canvas, clearBtn, hiddenInput);
+
+    // ========================================
+    // Cek & Tampilkan Autosave Draft Lokal
+    // ========================================
+    if (!IS_EDIT_MODE) {
+        checkLocalDraft();
+    }
+
+    // Pasang Autosave Listener (Debounced)
+    let autosaveTimeout = null;
+    document.getElementById('formGelarAlat').addEventListener('input', function() {
+        clearTimeout(autosaveTimeout);
+        autosaveTimeout = setTimeout(saveLocalDraft, 800);
+    });
+    document.getElementById('formGelarAlat').addEventListener('change', function() {
+        clearTimeout(autosaveTimeout);
+        autosaveTimeout = setTimeout(saveLocalDraft, 400);
+    });
 
     // ========================================
     // Tombol Tandai Semua BAIK
@@ -488,6 +537,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         this.innerHTML = '<i class="fa-solid fa-check-double"></i> Semua Ditandai Baik!';
         this.style.background = '#059669';
+        saveLocalDraft();
         setTimeout(() => {
             this.innerHTML = '<i class="fa-solid fa-circle-check"></i> Tandai Semua BAIK & Lengkap';
             this.style.background = '#10b981';
@@ -509,15 +559,37 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ========================================
-    // Preview thumbnail foto temuan
+    // Preview & Kompresi Foto Temuan (Client-Side)
     // ========================================
     document.querySelectorAll('input[type="file"][name^="foto_item_"]').forEach(input => {
-        input.addEventListener('change', function() {
+        input.addEventListener('change', async function() {
             const itemId = this.name.replace('foto_item_', '');
             const card = document.getElementById('card_' + itemId) || document.getElementById('row_' + itemId);
             if (card && this.files[0]) {
-                const file = this.files[0];
-                const url = URL.createObjectURL(file);
+                const origFile = this.files[0];
+                const origSizeKb = Math.round(origFile.size / 1024);
+
+                let badge = card.querySelector('.compress-badge');
+                if (!badge) {
+                    badge = document.createElement('div');
+                    badge.className = 'compress-badge';
+                    badge.style.cssText = 'font-size:0.7rem;color:#0369a1;background:#e0f2fe;padding:2px 6px;border-radius:4px;margin-top:4px;display:inline-block;';
+                    card.appendChild(badge);
+                }
+                badge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengompres...';
+
+                try {
+                    const compressed = await window.ImageCompressor.compress(origFile, { maxDimension: 1280, quality: 0.8 });
+                    const dt = new DataTransfer();
+                    dt.items.add(compressed);
+                    input.files = dt.files;
+                    const compSizeKb = Math.round(compressed.size / 1024);
+                    badge.innerHTML = `<i class="fa-solid fa-check"></i> ${origSizeKb}KB &rarr; ${compSizeKb}KB`;
+                } catch(e) {
+                    badge.innerHTML = `<i class="fa-solid fa-check"></i> Siap upload`;
+                }
+
+                const url = URL.createObjectURL(input.files[0]);
                 let prevEl = card.querySelector('.foto-preview');
                 if (!prevEl) {
                     prevEl = document.createElement('img');
@@ -529,7 +601,151 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // ========================================
+    // Kompresi Foto Kegiatan Apel
+    // ========================================
+    const fotoKegiatanInput = document.querySelector('input[type="file"][name="foto_kegiatan"]');
+    if (fotoKegiatanInput) {
+        fotoKegiatanInput.addEventListener('change', async function() {
+            if (this.files[0]) {
+                const origFile = this.files[0];
+                const origSizeMb = (origFile.size / (1024*1024)).toFixed(1);
+                const parent = this.parentElement;
+                let badge = parent.querySelector('.kegiatan-compress-badge');
+                if (!badge) {
+                    badge = document.createElement('div');
+                    badge.className = 'kegiatan-compress-badge';
+                    badge.style.cssText = 'font-size:0.8rem;color:#047857;background:#d1fae5;padding:4px 8px;border-radius:6px;margin-top:6px;display:inline-block;';
+                    parent.appendChild(badge);
+                }
+                badge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengoptimalkan foto kegiatan...';
+
+                try {
+                    const compressed = await window.ImageCompressor.compress(origFile, { maxDimension: 1600, quality: 0.82 });
+                    const dt = new DataTransfer();
+                    dt.items.add(compressed);
+                    this.files = dt.files;
+                    const compSizeKb = Math.round(compressed.size / 1024);
+                    badge.innerHTML = `<i class="fa-solid fa-circle-check"></i> Foto dioptimalkan (${origSizeMb}MB &rarr; ${compSizeKb}KB)`;
+                } catch(e) {
+                    badge.innerHTML = `<i class="fa-solid fa-check"></i> Foto siap diunggah`;
+                }
+            }
+        });
+    }
 });
+
+// ========================================
+// Autosave LocalStorage Logic
+// ========================================
+function saveLocalDraft() {
+    if (IS_EDIT_MODE) return;
+    const form = document.getElementById('formGelarAlat');
+    if (!form) return;
+
+    const draft = {
+        savedAt: new Date().toISOString(),
+        pelaksana1: form.querySelector('[name="nama_pelaksana_1"]')?.value || '',
+        pelaksana2: form.querySelector('[name="nama_pelaksana_2"]')?.value || '',
+        pendamping: form.querySelector('[name="pendamping_admin"]')?.value || '',
+        catatanUmum: form.querySelector('[name="catatan_umum"]')?.value || '',
+        items: {}
+    };
+
+    // Ambil semua radio kondisi & realisasi & keterangan
+    form.querySelectorAll('.cond-radio:checked').forEach(radio => {
+        const id = radio.dataset.itemId;
+        if (!draft.items[id]) draft.items[id] = {};
+        draft.items[id].kondisi = radio.value;
+    });
+
+    form.querySelectorAll('.input-realisasi').forEach(input => {
+        const name = input.name;
+        const match = name.match(/items\[(\d+)\]/);
+        if (match) {
+            const id = match[1];
+            if (!draft.items[id]) draft.items[id] = {};
+            draft.items[id].realisasi = input.value;
+        }
+    });
+
+    form.querySelectorAll('.ket-input').forEach(input => {
+        const name = input.name;
+        const match = name.match(/items\[(\d+)\]/);
+        if (match) {
+            const id = match[1];
+            if (!draft.items[id]) draft.items[id] = {};
+            draft.items[id].keterangan = input.value;
+        }
+    });
+
+    try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch(e) {}
+}
+
+function checkLocalDraft() {
+    try {
+        const raw = localStorage.getItem(DRAFT_KEY);
+        if (!raw) return;
+        const draft = JSON.parse(raw);
+        if (!draft || !draft.savedAt) return;
+
+        const date = new Date(draft.savedAt);
+        const timeStr = date.toLocaleDateString('id-ID', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+        document.getElementById('autosaveTime').textContent = `Tersimpan otomatis pada ${timeStr}`;
+        document.getElementById('autosaveBanner').style.display = 'block';
+    } catch(e) {}
+}
+
+function restoreDraftData() {
+    try {
+        const raw = localStorage.getItem(DRAFT_KEY);
+        if (!raw) return;
+        const draft = JSON.parse(raw);
+        const form = document.getElementById('formGelarAlat');
+
+        if (draft.pelaksana1) form.querySelector('[name="nama_pelaksana_1"]').value = draft.pelaksana1;
+        if (draft.pelaksana2) form.querySelector('[name="nama_pelaksana_2"]').value = draft.pelaksana2;
+        if (draft.pendamping) form.querySelector('[name="pendamping_admin"]').value = draft.pendamping;
+        if (draft.catatanUmum) form.querySelector('[name="catatan_umum"]').value = draft.catatanUmum;
+
+        if (draft.items) {
+            Object.keys(draft.items).forEach(id => {
+                const item = draft.items[id];
+                if (item.kondisi) {
+                    const radios = form.querySelectorAll(`.cond-radio[data-item-id="${id}"][value="${item.kondisi}"]`);
+                    radios.forEach(r => { r.checked = true; });
+                    const ket = document.getElementById('ketWrapper_' + id);
+                    if (ket) {
+                        ket.style.display = (item.kondisi === 'rusak' || item.kondisi === 'waktu_ganti') ? 'block' : 'none';
+                    }
+                }
+                if (item.realisasi !== undefined) {
+                    const real = form.querySelector(`[name="items[${id}][realisasi]"]`);
+                    if (real) real.value = item.realisasi;
+                }
+                if (item.keterangan !== undefined) {
+                    const ketInput = form.querySelector(`[name="items[${id}][keterangan]"]`);
+                    if (ketInput) ketInput.value = item.keterangan;
+                }
+            });
+        }
+
+        document.getElementById('autosaveBanner').style.display = 'none';
+        alert('Draft pemeriksaan berhasil dipulihkan!');
+    } catch(e) {
+        alert('Gagal memulihkan draft.');
+    }
+}
+
+function discardDraftData() {
+    try {
+        localStorage.removeItem(DRAFT_KEY);
+    } catch(e) {}
+    document.getElementById('autosaveBanner').style.display = 'none';
+}
 
 // ========================================
 // Function Kirim Form Aman
@@ -550,6 +766,11 @@ function kirimForm(action) {
             return;
         }
     }
+
+    // Bersihkan draft lokal setelah kirim
+    try {
+        localStorage.removeItem(DRAFT_KEY);
+    } catch(e) {}
 
     const btn = document.getElementById('btnSubmit');
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + (action === 'submit' ? 'Mengirim...' : 'Menyimpan...');

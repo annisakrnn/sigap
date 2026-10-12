@@ -133,6 +133,14 @@ document.addEventListener('click', function(e) {
 // Poll count setiap 30 detik
 pollNotifCount();
 setInterval(pollNotifCount, 30000);
+
+// Register Service Worker PWA
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('<?= base_url('sw.js') ?>')
+            .catch(err => console.log('SW registration error:', err));
+    });
+}
 </script>
 </body>
 </html>

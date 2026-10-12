@@ -13,7 +13,7 @@ if (!$user) { echo json_encode(['ok' => false]); exit; }
 $pdo = get_db_connection();
 if (!$pdo) { echo json_encode(['ok' => false]); exit; }
 
-$notif_id = (int)($_POST['id'] ?? 0);
+$notif_id = (int)(isset($_POST['id']) ? $_POST['id'] : 0);
 
 try {
     if ($notif_id > 0) {

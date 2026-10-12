@@ -11,7 +11,7 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/../config/database.php';
 
 function base_url($path = '') {
-    $script_name = $_SERVER['SCRIPT_NAME'] ?? '';
+    $script_name = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
     // Strategi: cari posisi folder project di dalam script_name
     // Nama folder yang dikenal sebagai folder project root
     $project_folders = ['sigap'];
@@ -59,11 +59,11 @@ function get_logged_user() {
     }
     return [
         'id'           => $_SESSION['user_id'],
-        'username'     => $_SESSION['username'] ?? '',
-        'nama_lengkap' => $_SESSION['nama_lengkap'] ?? '',
-        'role'         => $_SESSION['role'] ?? '',
-        'jabatan'      => $_SESSION['jabatan'] ?? '',
-        'no_hp'        => $_SESSION['no_hp'] ?? ''
+        'username'     => isset($_SESSION['username']) ? $_SESSION['username'] : '',
+        'nama_lengkap' => isset($_SESSION['nama_lengkap']) ? $_SESSION['nama_lengkap'] : '',
+        'role'         => isset($_SESSION['role']) ? $_SESSION['role'] : '',
+        'jabatan'      => isset($_SESSION['jabatan']) ? $_SESSION['jabatan'] : '',
+        'no_hp'        => isset($_SESSION['no_hp']) ? $_SESSION['no_hp'] : ''
     ];
 }
 
@@ -78,7 +78,7 @@ function require_login() {
 function require_role($allowed_roles) {
     require_login();
     $roles = is_array($allowed_roles) ? $allowed_roles : [$allowed_roles];
-    $current_role = $_SESSION['role'] ?? '';
+    $current_role = isset($_SESSION['role']) ? $_SESSION['role'] : '';
     
     if (!in_array($current_role, $roles)) {
         $_SESSION['flash_error'] = "Akses ditolak: Anda tidak memiliki izin untuk membuka halaman tersebut.";
@@ -104,3 +104,51 @@ function get_flash($type) {
     }
     return null;
 }
+
+/**
+ * CSRF Protection Helpers
+ */
+function csrf_token() {
+    if (empty($_SESSION['csrf_token'])) {
+        try {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        } catch (Exception $e) {
+            $_SESSION['csrf_token'] = md5(uniqid(mt_rand(), true));
+        }
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function csrf_field() {
+    $token = htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8');
+    return '<input type="hidden" name="csrf_token" value="' . $token . '">';
+}
+
+function verify_csrf_token($token = null) {
+    if ($token === null) {
+        $token = isset($_POST['csrf_token']) ? $_POST['csrf_token'] : (isset($_SERVER['HTTP_X_CSRF_TOKEN']) ? $_SERVER['HTTP_X_CSRF_TOKEN'] : '');
+    }
+    $session_token = isset($_SESSION['csrf_token']) ? $_SESSION['csrf_token'] : '';
+    if (empty($session_token) || empty($token)) {
+        return false;
+    }
+    return hash_equals($session_token, $token);
+}
+
+function require_csrf() {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (!verify_csrf_token()) {
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json; charset=utf-8');
+                http_response_code(403);
+                echo json_encode(['ok' => false, 'pesan' => 'Token CSRF tidak valid atau sesi Anda telah kedaluwarsa. Silakan refresh halaman.']);
+                exit;
+            }
+            set_flash('error', 'Token keamanan (CSRF) tidak valid atau sesi telah berakhir. Silakan ulangi kembali.');
+            $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : base_url('index.php');
+            header("Location: " . $referer);
+            exit;
+        }
+    }
+}
+

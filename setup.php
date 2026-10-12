@@ -1,7 +1,7 @@
 <?php
 /**
  * Script Inisialisasi Database & Seeder Data SIGAP
- * Bisa dijalankan via Browser (http://localhost/gelar_alat/setup.php) atau CLI (php setup.php)
+ * Bisa dijalankan via Browser (http://localhost/sigap/setup.php) atau CLI (php setup.php)
  */
 
 define('DB_HOST', '127.0.0.1');
@@ -66,7 +66,8 @@ try {
     // 5. Seed Users (2 Role: Petugas & Manajemen Atasan)
     $password_default = password_hash('123456', PASSWORD_BCRYPT);
     $users = [
-        // Role: Petugas Pemeriksa
+        // Role: Petugas Pemeriksa & User Publik Lapangan
+        ['username' => 'petugas_lapangan', 'nama_lengkap' => 'Petugas Lapangan', 'role' => 'petugas', 'jabatan' => 'Pelaksana Lapangan ULP Balong', 'no_hp' => '081234567890'],
         ['username' => 'petugas_yandal', 'nama_lengkap' => 'Ropiko (Pelaksana Yandal)', 'role' => 'petugas', 'jabatan' => 'Petugas Pelaksana Yandal ULP Balong', 'no_hp' => '081234567891'],
         ['username' => 'petugas_p2tl', 'nama_lengkap' => 'Sayitno (Pelaksana P2TL)', 'role' => 'petugas', 'jabatan' => 'Pelaksana Lapangan PT Citacontrac', 'no_hp' => '081234567892'],
         ['username' => 'petugas_har', 'nama_lengkap' => 'Ahmad Fauzi (Pelaksana HAR)', 'role' => 'petugas', 'jabatan' => 'Pelaksana Pemeliharaan Distribusi', 'no_hp' => '081234567893'],

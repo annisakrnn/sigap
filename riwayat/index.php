@@ -12,9 +12,10 @@ if (!$pdo) { header("Location: ../setup.php"); exit; }
 $user = get_logged_user();
 
 // Filter params
-$filter_status  = $_GET['status'] ?? '';
-$filter_jenis   = $_GET['jenis'] ?? '';
-$filter_bulan   = $_GET['bulan'] ?? '';
+$filter_status  = isset($_GET['status']) ? $_GET['status'] : '';
+$filter_jenis   = isset($_GET['jenis']) ? $_GET['jenis'] : '';
+$filter_dari    = isset($_GET['tgl_dari']) ? $_GET['tgl_dari'] : '';
+$filter_sampai  = isset($_GET['tgl_sampai']) ? $_GET['tgl_sampai'] : '';
 
 // Query dengan filter
 $where = [];
@@ -32,9 +33,13 @@ if (!empty($filter_jenis) && in_array($filter_jenis, ['p2tl','sr_app','yandal','
     $where[] = "h.jenis_pekerjaan = :jenis";
     $params[':jenis'] = $filter_jenis;
 }
-if (!empty($filter_bulan)) {
-    $where[] = "DATE_FORMAT(h.tanggal_inspeksi, '%Y-%m') = :bulan";
-    $params[':bulan'] = $filter_bulan;
+if (!empty($filter_dari)) {
+    $where[] = "h.tanggal_inspeksi >= :tgl_dari";
+    $params[':tgl_dari'] = $filter_dari;
+}
+if (!empty($filter_sampai)) {
+    $where[] = "h.tanggal_inspeksi <= :tgl_sampai";
+    $params[':tgl_sampai'] = $filter_sampai;
 }
 
 $where_sql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
@@ -93,9 +98,14 @@ require_once __DIR__ . '/../includes/header.php';
             </select>
         </div>
         <div>
-            <label class="form-label" style="font-size:0.8rem;">Bulan / Tahun</label>
-            <input type="month" name="bulan" class="form-control" value="<?= htmlspecialchars($filter_bulan) ?>"
-                style="font-size:0.85rem; padding:6px 12px; min-width:140px;">
+            <label class="form-label" style="font-size:0.8rem;">Dari Tanggal</label>
+            <input type="date" name="tgl_dari" class="form-control" value="<?= htmlspecialchars($filter_dari) ?>"
+                style="font-size:0.85rem; padding:6px 12px;">
+        </div>
+        <div>
+            <label class="form-label" style="font-size:0.8rem;">Sampai Tanggal</label>
+            <input type="date" name="tgl_sampai" class="form-control" value="<?= htmlspecialchars($filter_sampai) ?>"
+                style="font-size:0.85rem; padding:6px 12px;">
         </div>
         <div style="display:flex; gap:8px;">
             <button type="submit" class="btn btn-primary" style="padding:7px 16px; font-size:0.85rem;">
@@ -110,12 +120,17 @@ require_once __DIR__ . '/../includes/header.php';
 
 <!-- Tabel Data -->
 <div class="card">
-    <div class="card-header">
+    <div class="card-header" style="flex-wrap:wrap; gap:10px;">
         <h2 class="card-title">
             <i class="fa-solid fa-folder-open" style="color:var(--primary);"></i>
             Daftar Berita Acara
-            <span class="badge badge-submitted" style="font-size:0.7rem; margin-left:6px;"><?= count($rows) ?> dokumen</span>
+            <span class="badge badge-submitted" id="docCountBadge" style="font-size:0.7rem; margin-left:6px;"><?= count($rows) ?> dokumen</span>
         </h2>
+        <!-- Live Instant Search -->
+        <div style="min-width:240px; position:relative;">
+            <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.8rem;"></i>
+            <input type="text" id="liveSearchInput" oninput="filterRiwayatTable()" placeholder="Ketik untuk cari cepat..." class="form-control" style="padding-left:30px; font-size:0.825rem; height:34px;">
+        </div>
     </div>
 
     <?php if (empty($rows)): ?>
@@ -144,10 +159,20 @@ require_once __DIR__ . '/../includes/header.php';
                 </thead>
                 <tbody>
                     <?php foreach ($rows as $i => $row): ?>
-                        <tr>
+                        <?php 
+                        $search_keywords = strtolower(
+                            (isset($row['nomor_dokumen']) ? $row['nomor_dokumen'] : '') . ' ' .
+                            $row['nama_regu'] . ' ' .
+                            (isset($row['nopol']) ? $row['nopol'] : '') . ' ' .
+                            $row['nama_petugas'] . ' ' .
+                            $row['jenis_pekerjaan'] . ' ' .
+                            $row['status']
+                        );
+                        ?>
+                        <tr class="row-riwayat" data-search="<?= htmlspecialchars($search_keywords) ?>">
                             <td style="color:var(--text-muted); font-size:0.8rem;"><?= $i + 1 ?></td>
                             <td style="font-family:monospace; font-size:0.8rem; font-weight:600; color:var(--primary);">
-                                <?= htmlspecialchars($row['nomor_dokumen'] ?? '-') ?>
+                                <?= htmlspecialchars(isset($row['nomor_dokumen']) ? $row['nomor_dokumen'] : '-') ?>
                             </td>
                             <td><strong style="color:var(--text-main);"><?= date('d/m/Y', strtotime($row['tanggal_inspeksi'])) ?></strong></td>
                             <td>
@@ -204,5 +229,28 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
     <?php endif; ?>
 </div>
+
+<script>
+function filterRiwayatTable() {
+    const query = document.getElementById('liveSearchInput').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('.row-riwayat');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const text = row.dataset.search || '';
+        if (!query || text.includes(query)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    const badge = document.getElementById('docCountBadge');
+    if (badge) {
+        badge.textContent = visibleCount + ' dokumen';
+    }
+}
+</script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

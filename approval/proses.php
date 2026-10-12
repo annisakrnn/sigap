@@ -5,6 +5,7 @@
  */
 require_once __DIR__ . '/../includes/auth_check.php';
 require_role('manajemen');
+require_csrf();
 
 $pdo = get_db_connection();
 if (!$pdo) { header("Location: ../setup.php"); exit; }
@@ -14,8 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $user = get_logged_user();
-$gelar_alat_id = intval($_POST['gelar_alat_id'] ?? 0);
-$action = $_POST['action'] ?? '';
+$gelar_alat_id = intval(isset($_POST['gelar_alat_id']) ? $_POST['gelar_alat_id'] : 0);
+$action = isset($_POST['action']) ? $_POST['action'] : '';
 
 if (!$gelar_alat_id || !in_array($action, ['approve', 'reject'])) {
     set_flash('error', "Request tidak valid.");
@@ -34,15 +35,15 @@ if (!$doc) {
 
 if ($action === 'approve') {
     // Validasi TTD
-    $ttd = trim($_POST['ttd_manajemen'] ?? '');
+    $ttd = trim(isset($_POST['ttd_manajemen']) ? $_POST['ttd_manajemen'] : '');
     if (empty($ttd) || strlen($ttd) < 100) {
         set_flash('error', "Tanda tangan digital Manajemen Atasan belum diisi. Silakan tanda tangan pada kolom yang tersedia.");
         header("Location: review.php?id=" . $gelar_alat_id); exit;
     }
 
-    $nama_pejabat = trim($_POST['nama_pejabat'] ?? $user['nama_lengkap']);
-    $jabatan_pejabat = trim($_POST['jabatan_pejabat'] ?? $user['jabatan']);
-    $catatan = trim($_POST['catatan_manajemen'] ?? '') ?: null;
+    $nama_pejabat = trim(isset($_POST['nama_pejabat']) ? $_POST['nama_pejabat'] : $user['nama_lengkap']);
+    $jabatan_pejabat = trim(isset($_POST['jabatan_pejabat']) ? $_POST['jabatan_pejabat'] : $user['jabatan']);
+    $catatan = trim(isset($_POST['catatan_manajemen']) ? $_POST['catatan_manajemen'] : '') ?: null;
 
     // Pastikan nomor dokumen ada
     $nomor_dokumen = $doc['nomor_dokumen'];
@@ -92,7 +93,7 @@ if ($action === 'approve') {
     header("Location: review.php?id=" . $gelar_alat_id); exit;
 
 } elseif ($action === 'reject') {
-    $catatan_reject = trim($_POST['catatan_manajemen'] ?? '');
+    $catatan_reject = trim(isset($_POST['catatan_manajemen']) ? $_POST['catatan_manajemen'] : '');
     if (empty($catatan_reject)) {
         $catatan_reject = "Laporan dikembalikan untuk perbaikan oleh " . $user['nama_lengkap'];
     }
@@ -109,8 +110,8 @@ if ($action === 'approve') {
     ");
     $stmt_reject->execute([
         ':mid'          => $user['id'],
-        ':nama_pejabat' => trim($_POST['nama_pejabat'] ?? $user['nama_lengkap']),
-        ':jabatan'      => trim($_POST['jabatan_pejabat'] ?? $user['jabatan']),
+        ':nama_pejabat' => trim(isset($_POST['nama_pejabat']) ? $_POST['nama_pejabat'] : $user['nama_lengkap']),
+        ':jabatan'      => trim(isset($_POST['jabatan_pejabat']) ? $_POST['jabatan_pejabat'] : $user['jabatan']),
         ':catatan'      => $catatan_reject,
         ':id'           => $gelar_alat_id
     ]);
@@ -123,7 +124,7 @@ if ($action === 'approve') {
         ");
         $stmt_notif->execute([
             ':uid'   => $doc['petugas_id'],
-            ':judul' => "Laporan Dikembalikan untuk Revisi: " . ($doc['nomor_dokumen'] ?? 'Dokumen #' . $gelar_alat_id),
+            ':judul' => "Laporan Dikembalikan untuk Revisi: " . (!empty($doc['nomor_dokumen']) ? $doc['nomor_dokumen'] : 'Dokumen #' . $gelar_alat_id),
             ':pesan' => "Catatan Manajemen: {$catatan_reject}",
             ':url'   => 'riwayat/detail.php?id=' . $gelar_alat_id
         ]);

@@ -4,7 +4,8 @@
  * SIGAP
  */
 require_once __DIR__ . '/../includes/auth_check.php';
-require_role('petugas');
+require_once __DIR__ . '/../includes/upload_helper.php';
+require_csrf();
 
 $pdo = get_db_connection();
 if (!$pdo) { header("Location: ../setup.php"); exit; }
@@ -14,22 +15,40 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $user = get_logged_user();
-$action = $_POST['action'] ?? 'draft'; // 'draft' or 'submit'
+$action = isset($_POST['action']) ? $_POST['action'] : 'draft'; // 'draft' or 'submit'
+
+// Tentukan petugas_id untuk integritas database
+$petugas_id = $user ? $user['id'] : null;
+if (!$petugas_id) {
+    $stmt_def = $pdo->query("SELECT id FROM users WHERE username = 'petugas_lapangan' OR role = 'petugas' ORDER BY (username = 'petugas_lapangan') DESC, id ASC LIMIT 1");
+    $petugas_id = $stmt_def->fetchColumn();
+    if (!$petugas_id) {
+        $pdo->prepare("INSERT INTO users (username, password_hash, nama_lengkap, role, jabatan) VALUES ('petugas_lapangan', :pw, 'Petugas Lapangan', 'petugas', 'Pelaksana Lapangan')")
+            ->execute([':pw' => password_hash('123456', PASSWORD_BCRYPT)]);
+        $petugas_id = $pdo->lastInsertId();
+    }
+}
 
 // Validasi input dasar
-$jenis_pekerjaan = in_array($_POST['jenis_pekerjaan'] ?? '', ['p2tl','sr_app','yandal','har']) ? $_POST['jenis_pekerjaan'] : null;
-$regu_id = intval($_POST['regu_id'] ?? 0);
+$jenis_param = isset($_POST['jenis_pekerjaan']) ? $_POST['jenis_pekerjaan'] : '';
+$jenis_pekerjaan = in_array($jenis_param, ['p2tl','sr_app','yandal','har']) ? $jenis_param : null;
+$regu_id = intval(isset($_POST['regu_id']) ? $_POST['regu_id'] : 0);
 
 if (!$jenis_pekerjaan || !$regu_id) {
     set_flash('error', "Data formulir tidak valid. Silakan ulangi.");
     header("Location: index.php"); exit;
 }
 
-$edit_id = intval($_POST['edit_id'] ?? 0);
+$edit_id = intval(isset($_POST['edit_id']) ? $_POST['edit_id'] : 0);
 $existing_header = null;
 if ($edit_id > 0) {
-    $stmt_cek = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id AND petugas_id = :uid LIMIT 1");
-    $stmt_cek->execute([':id' => $edit_id, ':uid' => $user['id']]);
+    if ($user) {
+        $stmt_cek = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id AND (petugas_id = :uid OR :is_mgr = 1) LIMIT 1");
+        $stmt_cek->execute([':id' => $edit_id, ':uid' => $user['id'], ':is_mgr' => ($user['role'] === 'manajemen' ? 1 : 0)]);
+    } else {
+        $stmt_cek = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id LIMIT 1");
+        $stmt_cek->execute([':id' => $edit_id]);
+    }
     $existing_header = $stmt_cek->fetch();
     if (!$existing_header || !in_array($existing_header['status'], ['draft', 'rejected'])) {
         set_flash('error', "Dokumen tidak dapat diubah.");
@@ -39,7 +58,7 @@ if ($edit_id > 0) {
 
 // Validasi TTD untuk submit
 if ($action === 'submit') {
-    $ttd = trim($_POST['ttd_petugas'] ?? '');
+    $ttd = trim(isset($_POST['ttd_petugas']) ? $_POST['ttd_petugas'] : '');
     $has_existing_ttd = ($existing_header && !empty($existing_header['ttd_petugas']));
     if ((empty($ttd) || strlen($ttd) < 100) && !$has_existing_ttd) {
         set_flash('error', "Tanda tangan digital petugas pemeriksa belum diisi. Silakan tanda tangan pada kolom yang tersedia.");
@@ -51,22 +70,21 @@ if ($action === 'submit') {
 try {
     $pdo->beginTransaction();
 
-    // 1. Upload foto kegiatan
-    $foto_kegiatan_path = $_POST['existing_foto_kegiatan'] ?? ($existing_header['foto_kegiatan'] ?? null);
-    if (!empty($_FILES['foto_kegiatan']['tmp_name'])) {
-        $dir = __DIR__ . '/../uploads/foto_kegiatan/';
-        if (!is_dir($dir)) mkdir($dir, 0777, true);
-        $ext = pathinfo($_FILES['foto_kegiatan']['name'], PATHINFO_EXTENSION);
-        $fname = 'apel_' . date('Ymd_His') . '_' . uniqid() . '.' . $ext;
-        if (move_uploaded_file($_FILES['foto_kegiatan']['tmp_name'], $dir . $fname)) {
-            $foto_kegiatan_path = $fname;
+    // 1. Upload foto kegiatan aman
+    $foto_kegiatan_path = isset($_POST['existing_foto_kegiatan']) ? $_POST['existing_foto_kegiatan'] : (isset($existing_header['foto_kegiatan']) ? $existing_header['foto_kegiatan'] : null);
+    if (!empty($_FILES['foto_kegiatan']['name']) && !empty($_FILES['foto_kegiatan']['tmp_name'])) {
+        $up_kegiatan = secure_upload_image($_FILES['foto_kegiatan'], 'foto_kegiatan', 'apel');
+        if ($up_kegiatan['success']) {
+            $foto_kegiatan_path = $up_kegiatan['filename'];
+        } else {
+            throw new Exception("Gagal mengunggah Foto Kegiatan: " . $up_kegiatan['error']);
         }
     }
 
     // 2. Simpan atau Update header gelar alat
     $status = ($action === 'submit') ? 'submitted' : 'draft';
-    $raw_ttd = trim($_POST['ttd_petugas'] ?? '');
-    $ttd_petugas = (!empty($raw_ttd) && strlen($raw_ttd) >= 100) ? $raw_ttd : ($existing_header['ttd_petugas'] ?? null);
+    $raw_ttd = trim(isset($_POST['ttd_petugas']) ? $_POST['ttd_petugas'] : '');
+    $ttd_petugas = (!empty($raw_ttd) && strlen($raw_ttd) >= 100) ? $raw_ttd : (isset($existing_header['ttd_petugas']) ? $existing_header['ttd_petugas'] : null);
 
     if ($edit_id > 0) {
         $header_id = $edit_id;
@@ -94,14 +112,14 @@ try {
         ");
         $stmt_header->execute([
             ':nomor_dok'   => $nomor_dok,
-            ':tanggal'     => $_POST['tanggal_inspeksi'] ?? date('Y-m-d'),
-            ':bulan_tahun' => $_POST['bulan_tahun'] ?? date('F Y'),
+            ':tanggal'     => isset($_POST['tanggal_inspeksi']) ? $_POST['tanggal_inspeksi'] : date('Y-m-d'),
+            ':bulan_tahun' => isset($_POST['bulan_tahun']) ? $_POST['bulan_tahun'] : date('F Y'),
             ':jenis'       => $jenis_pekerjaan,
             ':regu_id'     => $regu_id,
-            ':nama1'       => trim($_POST['nama_pelaksana_1'] ?? $user['nama_lengkap']),
-            ':nama2'       => trim($_POST['nama_pelaksana_2'] ?? '') ?: null,
-            ':pendamping'  => trim($_POST['pendamping_admin'] ?? '') ?: null,
-            ':catatan'     => trim($_POST['catatan_umum'] ?? '') ?: null,
+            ':nama1'       => trim(isset($_POST['nama_pelaksana_1']) ? $_POST['nama_pelaksana_1'] : ($user ? $user['nama_lengkap'] : 'Petugas Lapangan')),
+            ':nama2'       => trim(isset($_POST['nama_pelaksana_2']) ? $_POST['nama_pelaksana_2'] : '') ?: null,
+            ':pendamping'  => trim(isset($_POST['pendamping_admin']) ? $_POST['pendamping_admin'] : '') ?: null,
+            ':catatan'     => trim(isset($_POST['catatan_umum']) ? $_POST['catatan_umum'] : '') ?: null,
             ':foto'        => $foto_kegiatan_path,
             ':status'      => $status,
             ':ttd'         => $ttd_petugas,
@@ -127,24 +145,24 @@ try {
         ");
         $stmt_header->execute([
             ':nomor_dok'   => $nomor_dok,
-            ':tanggal'     => $_POST['tanggal_inspeksi'] ?? date('Y-m-d'),
-            ':bulan_tahun' => $_POST['bulan_tahun'] ?? date('F Y'),
+            ':tanggal'     => isset($_POST['tanggal_inspeksi']) ? $_POST['tanggal_inspeksi'] : date('Y-m-d'),
+            ':bulan_tahun' => isset($_POST['bulan_tahun']) ? $_POST['bulan_tahun'] : date('F Y'),
             ':jenis'       => $jenis_pekerjaan,
             ':regu_id'     => $regu_id,
-            ':nama1'       => trim($_POST['nama_pelaksana_1'] ?? $user['nama_lengkap']),
-            ':nama2'       => trim($_POST['nama_pelaksana_2'] ?? '') ?: null,
-            ':pendamping'  => trim($_POST['pendamping_admin'] ?? '') ?: null,
-            ':catatan'     => trim($_POST['catatan_umum'] ?? '') ?: null,
+            ':nama1'       => trim(isset($_POST['nama_pelaksana_1']) ? $_POST['nama_pelaksana_1'] : ($user ? $user['nama_lengkap'] : 'Petugas Lapangan')),
+            ':nama2'       => trim(isset($_POST['nama_pelaksana_2']) ? $_POST['nama_pelaksana_2'] : '') ?: null,
+            ':pendamping'  => trim(isset($_POST['pendamping_admin']) ? $_POST['pendamping_admin'] : '') ?: null,
+            ':catatan'     => trim(isset($_POST['catatan_umum']) ? $_POST['catatan_umum'] : '') ?: null,
             ':foto'        => $foto_kegiatan_path,
             ':status'      => $status,
             ':ttd'         => $ttd_petugas,
-            ':petugas_id'  => $user['id']
+            ':petugas_id'  => $petugas_id
         ]);
         $header_id = $pdo->lastInsertId();
     }
 
     // 3. Simpan detail items
-    $items = $_POST['items'] ?? [];
+    $items = isset($_POST['items']) ? $_POST['items'] : [];
     $stmt_detail = $pdo->prepare("
         INSERT INTO gelar_alat_detail 
             (gelar_alat_id, master_barang_id, nama_barang_snapshot, kategori_snapshot,
@@ -158,7 +176,7 @@ try {
     $stmt_nama = $pdo->prepare("SELECT nama_barang, kategori FROM master_barang WHERE id = :id LIMIT 1");
 
     foreach ($items as $item_tpl_id => $item_data) {
-        $barang_id = intval($item_data['barang_id'] ?? 0);
+        $barang_id = intval(isset($item_data['barang_id']) ? $item_data['barang_id'] : 0);
         if (!$barang_id) continue;
 
         $stmt_nama->execute([':id' => $barang_id]);
@@ -172,26 +190,24 @@ try {
         $foto_src_key = isset($_FILES[$foto_key_1]) && !empty($_FILES[$foto_key_1]['tmp_name']) ? $foto_key_1 :
                        (isset($_FILES[$foto_key_2]) && !empty($_FILES[$foto_key_2]['tmp_name']) ? $foto_key_2 : null);
 
-        if ($foto_src_key) {
-            $dir_t = __DIR__ . '/../uploads/foto_temuan/';
-            if (!is_dir($dir_t)) mkdir($dir_t, 0777, true);
-            $ext_t = pathinfo($_FILES[$foto_src_key]['name'], PATHINFO_EXTENSION);
-            $fname_t = 'temuan_' . $header_id . '_' . $barang_id . '_' . uniqid() . '.' . $ext_t;
-            if (move_uploaded_file($_FILES[$foto_src_key]['tmp_name'], $dir_t . $fname_t)) {
-                $foto_temuan_path = $fname_t;
+        if ($foto_src_key && !empty($_FILES[$foto_src_key]['name'])) {
+            $up_temuan = secure_upload_image($_FILES[$foto_src_key], 'foto_temuan', 'temuan_' . $header_id . '_' . $barang_id);
+            if ($up_temuan['success']) {
+                $foto_temuan_path = $up_temuan['filename'];
             }
         }
 
+        $kondisi_val = isset($item_data['kondisi']) ? $item_data['kondisi'] : '';
         $stmt_detail->execute([
             ':header_id'        => $header_id,
             ':barang_id'        => $barang_id,
             ':nama_snapshot'    => $barang['nama_barang'],
-            ':kategori_snapshot'=> $item_data['kategori'] ?? $barang['kategori'],
-            ':std'              => intval($item_data['jumlah_standar'] ?? 1),
-            ':realisasi'        => intval($item_data['realisasi'] ?? 0),
-            ':satuan'           => $item_data['satuan'] ?? '-',
-            ':kondisi'          => in_array($item_data['kondisi'] ?? '', ['baik','rusak','waktu_ganti','hilang','ada','tidak_ada']) ? $item_data['kondisi'] : 'baik',
-            ':ket'              => trim($item_data['keterangan'] ?? '') ?: null,
+            ':kategori_snapshot'=> isset($item_data['kategori']) ? $item_data['kategori'] : $barang['kategori'],
+            ':std'              => intval(isset($item_data['jumlah_standar']) ? $item_data['jumlah_standar'] : 1),
+            ':realisasi'        => intval(isset($item_data['realisasi']) ? $item_data['realisasi'] : 0),
+            ':satuan'           => isset($item_data['satuan']) ? $item_data['satuan'] : '-',
+            ':kondisi'          => in_array($kondisi_val, ['baik','rusak','waktu_ganti','hilang','ada','tidak_ada']) ? $kondisi_val : 'baik',
+            ':ket'              => trim(isset($item_data['keterangan']) ? $item_data['keterangan'] : '') ?: null,
             ':foto'             => $foto_temuan_path
         ]);
     }
@@ -204,11 +220,12 @@ try {
                 INSERT INTO notifikasi (user_id, judul, pesan, tipe, url_aksi)
                 VALUES (:uid, :judul, :pesan, 'info', :url)
             ");
+            $nama_notif_sender = trim(isset($_POST['nama_pelaksana_1']) ? $_POST['nama_pelaksana_1'] : ($user ? $user['nama_lengkap'] : 'Pelaksana Lapangan'));
             foreach ($manajemen_users as $mid) {
                 $stmt_notif->execute([
                     ':uid'   => $mid,
                     ':judul' => ($edit_id > 0 ? "Revisi Gelar Alat Masuk: " : "Laporan Gelar Alat Baru: ") . $nomor_dok,
-                    ':pesan' => "Petugas {$user['nama_lengkap']} telah " . ($edit_id > 0 ? "mengirimkan revisi dokumen" : "mengirimkan laporan") . " gelar alat untuk direview.",
+                    ':pesan' => "Petugas {$nama_notif_sender} telah " . ($edit_id > 0 ? "mengirimkan revisi dokumen" : "mengirimkan laporan") . " gelar alat untuk direview.",
                     ':url'   => 'approval/review.php?id=' . $header_id
                 ]);
             }

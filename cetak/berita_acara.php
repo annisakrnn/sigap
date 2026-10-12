@@ -10,7 +10,7 @@ $pdo = get_db_connection();
 if (!$pdo) exit("Database error.");
 
 $user = get_logged_user();
-$id = intval($_GET['id'] ?? 0);
+$id = intval(isset($_GET['id']) ? $_GET['id'] : 0);
 
 $stmt_h = $pdo->prepare("
     SELECT h.*, r.nama_regu, r.nopol, r.kendaraan,
@@ -172,14 +172,14 @@ $kondisi_label_print = [
     </div>
     <div class="kop-judul">
         <h2>BERITA ACARA GELAR PASUKAN DAN PERALATAN KERJA</h2>
-        <h3><?= htmlspecialchars(strtoupper($jenis_label_full[$header['jenis_pekerjaan']] ?? $header['jenis_pekerjaan'])) ?></h3>
+        <h3><?= htmlspecialchars(strtoupper(isset($jenis_label_full[$header['jenis_pekerjaan']]) ? $jenis_label_full[$header['jenis_pekerjaan']] : $header['jenis_pekerjaan'])) ?></h3>
     </div>
 
     <!-- Info Header Dokumen -->
     <table class="info-table" style="border:1px solid #000;margin-bottom:4px;">
         <tr>
             <td style="width:20%;font-weight:bold;background:#f5f5f5;border-right:1px solid #ccc;border-bottom:1px solid #ccc;">No. Dokumen</td>
-            <td style="width:30%;border-right:1px solid #ccc;border-bottom:1px solid #ccc;"><?= htmlspecialchars($header['nomor_dokumen'] ?? '-') ?></td>
+            <td style="width:30%;border-right:1px solid #ccc;border-bottom:1px solid #ccc;"><?= htmlspecialchars(isset($header['nomor_dokumen']) ? $header['nomor_dokumen'] : '-') ?></td>
             <td style="width:20%;font-weight:bold;background:#f5f5f5;border-right:1px solid #ccc;border-bottom:1px solid #ccc;">Tanggal Gelar</td>
             <td style="border-bottom:1px solid #ccc;"><?= date('d F Y', strtotime($header['tanggal_inspeksi'])) ?></td>
         </tr>
@@ -187,13 +187,13 @@ $kondisi_label_print = [
             <td style="font-weight:bold;background:#f5f5f5;border-right:1px solid #ccc;border-bottom:1px solid #ccc;">Regu / Unit</td>
             <td style="border-right:1px solid #ccc;border-bottom:1px solid #ccc;"><?= htmlspecialchars($header['nama_regu']) ?></td>
             <td style="font-weight:bold;background:#f5f5f5;border-right:1px solid #ccc;border-bottom:1px solid #ccc;">Kendaraan / Nopol</td>
-            <td style="border-bottom:1px solid #ccc;"><?= htmlspecialchars($header['kendaraan'] ?? '-') ?> / <?= htmlspecialchars($header['nopol'] ?? '-') ?></td>
+            <td style="border-bottom:1px solid #ccc;"><?= htmlspecialchars(isset($header['kendaraan']) ? $header['kendaraan'] : '-') ?> / <?= htmlspecialchars(isset($header['nopol']) ? $header['nopol'] : '-') ?></td>
         </tr>
         <tr>
             <td style="font-weight:bold;background:#f5f5f5;border-right:1px solid #ccc;">Pelaksana 1</td>
             <td style="border-right:1px solid #ccc;"><?= htmlspecialchars($header['nama_pelaksana_1']) ?></td>
             <td style="font-weight:bold;background:#f5f5f5;border-right:1px solid #ccc;">Pelaksana 2</td>
-            <td><?= htmlspecialchars($header['nama_pelaksana_2'] ?? '-') ?></td>
+            <td><?= htmlspecialchars(isset($header['nama_pelaksana_2']) ? $header['nama_pelaksana_2'] : '-') ?></td>
         </tr>
     </table>
 
@@ -213,7 +213,7 @@ $kondisi_label_print = [
             <?php $no = 1; foreach ($details_by_cat as $cat_key => $cat_items): ?>
                 <tr class="cat-row">
                     <td colspan="6" style="padding:3px 6px;">
-                        <?= strtoupper($kategori_labels[$cat_key] ?? ucfirst($cat_key)) ?>
+                        <?= strtoupper(isset($kategori_labels[$cat_key]) ? $kategori_labels[$cat_key] : ucfirst($cat_key)) ?>
                     </td>
                 </tr>
                 <?php foreach ($cat_items as $d): ?>
@@ -224,8 +224,8 @@ $kondisi_label_print = [
                         <td style="text-align:center;font-weight:bold;<?= $d['jumlah_realisasi'] < $d['jumlah_standar'] ? 'color:#7b241c;' : '' ?>">
                             <?= $d['jumlah_realisasi'] ?>
                         </td>
-                        <td class="cond-<?= $d['kondisi'] ?>"><?= $kondisi_label_print[$d['kondisi']] ?? $d['kondisi'] ?></td>
-                        <td style="font-size:8.5pt;"><?= htmlspecialchars($d['keterangan'] ?? '') ?></td>
+                        <td class="cond-<?= $d['kondisi'] ?>"><?= isset($kondisi_label_print[$d['kondisi']]) ? $kondisi_label_print[$d['kondisi']] : $d['kondisi'] ?></td>
+                        <td style="font-size:8.5pt;"><?= htmlspecialchars(isset($d['keterangan']) ? $d['keterangan'] : '') ?></td>
                     </tr>
                 <?php endforeach; ?>
             <?php endforeach; ?>
@@ -271,8 +271,8 @@ $kondisi_label_print = [
                         <div style="height:55px;"></div>
                     <?php endif; ?>
                 </div>
-                <div class="ttd-name"><?= htmlspecialchars($header['nama_pejabat_manajemen'] ?? '-') ?></div>
-                <div class="ttd-jabatan"><?= htmlspecialchars($header['jabatan_manajemen'] ?? '-') ?></div>
+                <div class="ttd-name"><?= htmlspecialchars(isset($header['nama_pejabat_manajemen']) ? $header['nama_pejabat_manajemen'] : '-') ?></div>
+                <div class="ttd-jabatan"><?= htmlspecialchars(isset($header['jabatan_manajemen']) ? $header['jabatan_manajemen'] : '-') ?></div>
                 <div class="ttd-jabatan" style="margin-top:2px;">Tanggal: <?= $header['tanggal_approval'] ? date('d/m/Y', strtotime($header['tanggal_approval'])) : '-' ?></div>
             </div>
         </div>

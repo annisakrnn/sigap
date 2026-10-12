@@ -1,10 +1,11 @@
 <?php
 /**
- * SIGAP - AJAX: Mark Temuan Alat sebagai Sudah Diperbaiki
- * POST: detail_id, catatan_perbaikan (opsional)
+ * SIGAP - AJAX: Mark Temuan Alat sebagai Sudah Diperbaiki & Upload Bukti Perbaikan
+ * POST: detail_id, catatan_perbaikan (opsional), foto_perbaikan (file opsional), csrf_token
  * Hanya bisa diakses oleh role: manajemen
  */
 require_once __DIR__ . '/../includes/auth_check.php';
+require_once __DIR__ . '/../includes/upload_helper.php';
 require_role('manajemen');
 
 header('Content-Type: application/json; charset=utf-8');
@@ -15,8 +16,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$detail_id = (int)($_POST['detail_id'] ?? 0);
-$catatan   = trim($_POST['catatan_perbaikan'] ?? '');
+if (!verify_csrf_token()) {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'pesan' => 'Token keamanan (CSRF) tidak valid atau sesi telah berakhir.']);
+    exit;
+}
+
+$detail_id = (int)(isset($_POST['detail_id']) ? $_POST['detail_id'] : 0);
+$catatan   = trim(isset($_POST['catatan_perbaikan']) ? $_POST['catatan_perbaikan'] : '');
 
 if ($detail_id <= 0) {
     echo json_encode(['ok' => false, 'pesan' => 'ID temuan tidak valid']);
@@ -58,28 +65,42 @@ try {
         exit;
     }
 
-    // 2. Update kolom di gelar_alat_detail
+    // 2. Upload foto bukti perbaikan jika ada
+    $foto_perbaikan_path = null;
+    if (!empty($_FILES['foto_perbaikan']['name']) && !empty($_FILES['foto_perbaikan']['tmp_name'])) {
+        $up = secure_upload_image($_FILES['foto_perbaikan'], 'perbaikan', 'perbaikan_' . $detail_id);
+        if ($up['success']) {
+            $foto_perbaikan_path = $up['filename'];
+        } else {
+            echo json_encode(['ok' => false, 'pesan' => 'Gagal upload foto perbaikan: ' . $up['error']]);
+            exit;
+        }
+    }
+
+    // 3. Update kolom di gelar_alat_detail
     $upd = $pdo->prepare("
         UPDATE gelar_alat_detail
         SET sudah_diperbaiki = 1,
             tgl_diperbaiki   = NOW(),
             diperbaiki_oleh  = :uid,
-            catatan_perbaikan = :catatan
+            catatan_perbaikan = :catatan,
+            foto_perbaikan    = :foto
         WHERE id = :id
     ");
     $upd->execute([
         ':uid'     => $user['id'],
         ':catatan' => $catatan ?: null,
+        ':foto'    => $foto_perbaikan_path,
         ':id'      => $detail_id,
     ]);
 
-    // 3. Kirim notifikasi ke petugas pemeriksa
+    // 4. Kirim notifikasi ke petugas pemeriksa
     $kondisi_label = $detail['kondisi'] === 'rusak' ? 'RUSAK' : 'PERLU GANTI';
     $tgl_label     = date('d/m/Y', strtotime($detail['tanggal_inspeksi']));
     $judul_notif   = "✅ Temuan Diperbaiki: {$detail['nama_barang_snapshot']}";
     $pesan_notif   = "Alat <strong>{$detail['nama_barang_snapshot']}</strong> ({$kondisi_label}) " .
                      "yang Anda laporkan pada laporan {$detail['nama_regu']} ({$tgl_label}) " .
-                     "telah ditandai <strong>selesai diperbaiki</strong> oleh " .
+                     "telah ditandai <strong>selesai diperbaiki / diganti</strong> oleh " .
                      "<strong>{$user['nama_lengkap']}</strong>.";
     if ($catatan) {
         $pesan_notif .= " Catatan: <em>{$catatan}</em>";
@@ -97,8 +118,9 @@ try {
     ]);
 
     echo json_encode([
-        'ok'   => true,
-        'pesan' => 'Temuan berhasil ditandai selesai dan notifikasi dikirim ke petugas.',
+        'ok'             => true,
+        'pesan'          => 'Temuan berhasil ditandai selesai dan notifikasi dikirim ke petugas.',
+        'foto_perbaikan' => $foto_perbaikan_path ? base_url('uploads/perbaikan/' . $foto_perbaikan_path) : null
     ]);
 
 } catch (Exception $e) {

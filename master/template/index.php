@@ -13,14 +13,15 @@ $user = get_logged_user();
 
 // Handle POST (Create, Update, Delete)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
+    require_csrf();
+    $action = isset($_POST['action']) ? $_POST['action'] : '';
 
     if ($action === 'create') {
-        $jenis_pekerjaan  = trim($_POST['jenis_pekerjaan'] ?? '');
-        $regu_tipe        = trim($_POST['regu_tipe'] ?? 'all');
-        $master_barang_id = intval($_POST['master_barang_id'] ?? 0);
-        $jumlah_standar   = max(1, intval($_POST['jumlah_standar'] ?? 1));
-        $urutan           = intval($_POST['urutan'] ?? 0);
+        $jenis_pekerjaan  = trim(isset($_POST['jenis_pekerjaan']) ? $_POST['jenis_pekerjaan'] : '');
+        $regu_tipe        = trim(isset($_POST['regu_tipe']) ? $_POST['regu_tipe'] : 'all');
+        $master_barang_id = intval(isset($_POST['master_barang_id']) ? $_POST['master_barang_id'] : 0);
+        $jumlah_standar   = max(1, intval(isset($_POST['jumlah_standar']) ? $_POST['jumlah_standar'] : 1));
+        $urutan           = intval(isset($_POST['urutan']) ? $_POST['urutan'] : 0);
 
         if (empty($jenis_pekerjaan) || $master_barang_id <= 0) {
             set_flash('error', 'Jenis pekerjaan dan nama barang wajib dipilih.');
@@ -58,12 +59,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'update') {
-        $id               = intval($_POST['id'] ?? 0);
-        $jenis_pekerjaan  = trim($_POST['jenis_pekerjaan'] ?? '');
-        $regu_tipe        = trim($_POST['regu_tipe'] ?? 'all');
-        $master_barang_id = intval($_POST['master_barang_id'] ?? 0);
-        $jumlah_standar   = max(1, intval($_POST['jumlah_standar'] ?? 1));
-        $urutan           = intval($_POST['urutan'] ?? 1);
+        $id               = intval(isset($_POST['id']) ? $_POST['id'] : 0);
+        $jenis_pekerjaan  = trim(isset($_POST['jenis_pekerjaan']) ? $_POST['jenis_pekerjaan'] : '');
+        $regu_tipe        = trim(isset($_POST['regu_tipe']) ? $_POST['regu_tipe'] : 'all');
+        $master_barang_id = intval(isset($_POST['master_barang_id']) ? $_POST['master_barang_id'] : 0);
+        $jumlah_standar   = max(1, intval(isset($_POST['jumlah_standar']) ? $_POST['jumlah_standar'] : 1));
+        $urutan           = intval(isset($_POST['urutan']) ? $_POST['urutan'] : 1);
 
         if ($id <= 0 || empty($jenis_pekerjaan) || $master_barang_id <= 0) {
             set_flash('error', 'Data tidak valid.');
@@ -96,8 +97,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'delete') {
-        $id = intval($_POST['id'] ?? 0);
-        $redirect_jenis = $_POST['jenis_pekerjaan'] ?? 'p2tl';
+        $id = intval(isset($_POST['id']) ? $_POST['id'] : 0);
+        $redirect_jenis = isset($_POST['jenis_pekerjaan']) ? $_POST['jenis_pekerjaan'] : 'p2tl';
         if ($id > 0) {
             $stmt = $pdo->prepare("DELETE FROM template_checklist_item WHERE id = :id");
             $stmt->execute([':id' => $id]);
@@ -109,12 +110,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Active tab jenis pekerjaan
-$active_jenis = $_GET['jenis'] ?? 'p2tl';
+$active_jenis = isset($_GET['jenis']) ? $_GET['jenis'] : 'p2tl';
 if (!in_array($active_jenis, ['p2tl', 'sr_app', 'yandal', 'har'])) {
     $active_jenis = 'p2tl';
 }
 
-$search = trim($_GET['q'] ?? '');
+$search = trim(isset($_GET['q']) ? $_GET['q'] : '');
 
 // Ambil daftar barang untuk dropdown modal
 $semua_barang = $pdo->query("SELECT id, nama_barang, kategori, satuan_default FROM master_barang ORDER BY kategori, nama_barang")->fetchAll();
@@ -123,10 +124,10 @@ $semua_barang = $pdo->query("SELECT id, nama_barang, kategori, satuan_default FR
 $counts_stmt = $pdo->query("SELECT jenis_pekerjaan, COUNT(*) as total FROM template_checklist_item GROUP BY jenis_pekerjaan");
 $counts_raw = $counts_stmt->fetchAll(PDO::FETCH_KEY_PAIR);
 $tab_counts = [
-    'p2tl'   => $counts_raw['p2tl'] ?? 0,
-    'sr_app' => $counts_raw['sr_app'] ?? 0,
-    'yandal' => $counts_raw['yandal'] ?? 0,
-    'har'    => $counts_raw['har'] ?? 0,
+    'p2tl'   => isset($counts_raw['p2tl']) ? $counts_raw['p2tl'] : 0,
+    'sr_app' => isset($counts_raw['sr_app']) ? $counts_raw['sr_app'] : 0,
+    'yandal' => isset($counts_raw['yandal']) ? $counts_raw['yandal'] : 0,
+    'har'    => isset($counts_raw['har']) ? $counts_raw['har'] : 0,
 ];
 
 // Query template checklist untuk tab aktif
@@ -229,7 +230,7 @@ require_once __DIR__ . '/../../includes/header.php';
     <div class="card-header">
         <h2 class="card-title">
             <i class="fa-solid fa-list-check" style="color:var(--primary);"></i>
-            Template: <?= htmlspecialchars($jenis_titles[$active_jenis] ?? strtoupper($active_jenis)) ?>
+            Template: <?= htmlspecialchars(isset($jenis_titles[$active_jenis]) ? $jenis_titles[$active_jenis] : strtoupper($active_jenis)) ?>
             <span class="badge badge-submitted" style="font-size:0.7rem; margin-left:6px;"><?= count($items) ?> item</span>
         </h2>
     </div>
@@ -259,7 +260,7 @@ require_once __DIR__ . '/../../includes/header.php';
                 </thead>
                 <tbody>
                     <?php foreach ($items as $i => $row): ?>
-                        <?php $kat_info = $kategori_labels[$row['kategori']] ?? ['label' => $row['kategori'], 'badge' => 'badge-draft', 'icon' => 'fa-tag']; ?>
+                        <?php $kat_info = isset($kategori_labels[$row['kategori']]) ? $kategori_labels[$row['kategori']] : ['label' => $row['kategori'], 'badge' => 'badge-draft', 'icon' => 'fa-tag']; ?>
                         <tr>
                             <td style="text-align:center; font-weight:700; color:var(--text-muted); font-size:0.8rem;">
                                 <?= $row['urutan'] ?>
@@ -326,6 +327,7 @@ require_once __DIR__ . '/../../includes/header.php';
         </div>
 
         <form method="POST" id="formTemplate">
+            <?= csrf_field() ?>
             <input type="hidden" name="action" id="formAction" value="create">
             <input type="hidden" name="id" id="templateId" value="">
 
@@ -349,7 +351,7 @@ require_once __DIR__ . '/../../includes/header.php';
                         if ($curr_kat !== $b['kategori']) {
                             if ($curr_kat !== '') echo '</optgroup>';
                             $curr_kat = $b['kategori'];
-                            $kat_name = $kategori_labels[$curr_kat]['label'] ?? ucfirst($curr_kat);
+                            $kat_name = isset($kategori_labels[$curr_kat]['label']) ? $kategori_labels[$curr_kat]['label'] : ucfirst($curr_kat);
                             echo '<optgroup label="' . htmlspecialchars($kat_name) . '">';
                         }
                     ?>
@@ -407,6 +409,7 @@ require_once __DIR__ . '/../../includes/header.php';
         </p>
 
         <form method="POST" id="formHapus">
+            <?= csrf_field() ?>
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="id" id="hapusId" value="">
             <input type="hidden" name="jenis_pekerjaan" value="<?= htmlspecialchars($active_jenis) ?>">

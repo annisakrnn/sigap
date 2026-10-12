@@ -14,14 +14,15 @@ $error_msg = '';
 
 // Handle POST (Create, Update, Delete)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
+    require_csrf();
+    $action = isset($_POST['action']) ? $_POST['action'] : '';
 
     if ($action === 'create') {
-        $nama_regu       = trim($_POST['nama_regu'] ?? '');
-        $jenis_pekerjaan = trim($_POST['jenis_pekerjaan'] ?? '');
-        $kendaraan       = trim($_POST['kendaraan'] ?? '');
-        $nopol           = trim($_POST['nopol'] ?? '');
-        $keterangan      = trim($_POST['keterangan'] ?? '');
+        $nama_regu       = trim(isset($_POST['nama_regu']) ? $_POST['nama_regu'] : '');
+        $jenis_pekerjaan = trim(isset($_POST['jenis_pekerjaan']) ? $_POST['jenis_pekerjaan'] : '');
+        $kendaraan       = trim(isset($_POST['kendaraan']) ? $_POST['kendaraan'] : '');
+        $nopol           = trim(isset($_POST['nopol']) ? $_POST['nopol'] : '');
+        $keterangan      = trim(isset($_POST['keterangan']) ? $_POST['keterangan'] : '');
 
         if (empty($nama_regu) || empty($jenis_pekerjaan)) {
             set_flash('error', 'Nama Regu dan Jenis Pekerjaan wajib diisi.');
@@ -41,12 +42,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'update') {
-        $id              = intval($_POST['id'] ?? 0);
-        $nama_regu       = trim($_POST['nama_regu'] ?? '');
-        $jenis_pekerjaan = trim($_POST['jenis_pekerjaan'] ?? '');
-        $kendaraan       = trim($_POST['kendaraan'] ?? '');
-        $nopol           = trim($_POST['nopol'] ?? '');
-        $keterangan      = trim($_POST['keterangan'] ?? '');
+        $id              = intval(isset($_POST['id']) ? $_POST['id'] : 0);
+        $nama_regu       = trim(isset($_POST['nama_regu']) ? $_POST['nama_regu'] : '');
+        $jenis_pekerjaan = trim(isset($_POST['jenis_pekerjaan']) ? $_POST['jenis_pekerjaan'] : '');
+        $kendaraan       = trim(isset($_POST['kendaraan']) ? $_POST['kendaraan'] : '');
+        $nopol           = trim(isset($_POST['nopol']) ? $_POST['nopol'] : '');
+        $keterangan      = trim(isset($_POST['keterangan']) ? $_POST['keterangan'] : '');
 
         if ($id <= 0 || empty($nama_regu) || empty($jenis_pekerjaan)) {
             set_flash('error', 'Data tidak valid.');
@@ -67,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'delete') {
-        $id = intval($_POST['id'] ?? 0);
+        $id = intval(isset($_POST['id']) ? $_POST['id'] : 0);
         if ($id > 0) {
             // Cek apakah regu sudah pernah digunakan di transaksi gelar alat
             $stmt_check = $pdo->prepare("SELECT COUNT(*) FROM gelar_alat_header WHERE regu_id = :id");
@@ -88,8 +89,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Filter query
-$filter_jenis = $_GET['jenis'] ?? '';
-$search       = trim($_GET['q'] ?? '');
+$filter_jenis = isset($_GET['jenis']) ? $_GET['jenis'] : '';
+$search       = trim(isset($_GET['q']) ? $_GET['q'] : '');
 
 $where = [];
 $params = [];
@@ -206,7 +207,7 @@ require_once __DIR__ . '/../../includes/header.php';
                                 </span>
                             </td>
                             <td>
-                                <?= htmlspecialchars($row['kendaraan'] ?? '-') ?>
+                                <?= htmlspecialchars(isset($row['kendaraan']) ? $row['kendaraan'] : '-') ?>
                             </td>
                             <td>
                                 <?php if ($row['nopol']): ?>
@@ -218,7 +219,7 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <?php endif; ?>
                             </td>
                             <td style="font-size:0.8rem; color:var(--text-muted);">
-                                <?= htmlspecialchars($row['keterangan'] ?? '-') ?>
+                                <?= htmlspecialchars(isset($row['keterangan']) ? $row['keterangan'] : '-') ?>
                             </td>
                             <td style="text-align:center;">
                                 <span class="badge <?= $row['total_laporan'] > 0 ? 'badge-approved' : 'badge-draft' ?>" style="font-size:0.7rem;">
@@ -252,6 +253,7 @@ require_once __DIR__ . '/../../includes/header.php';
         </div>
 
         <form method="POST" id="formRegu">
+            <?= csrf_field() ?>
             <input type="hidden" name="action" id="formAction" value="create">
             <input type="hidden" name="id" id="reguId" value="">
 
@@ -309,6 +311,7 @@ require_once __DIR__ . '/../../includes/header.php';
         </p>
 
         <form method="POST" id="formHapus">
+            <?= csrf_field() ?>
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="id" id="hapusId" value="">
             <div style="display:flex; gap:10px;">

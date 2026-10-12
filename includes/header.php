@@ -22,8 +22,15 @@ if ($user && $user['role'] === 'manajemen') {
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="csrf-token" content="<?= csrf_token() ?>">
+    <meta name="theme-color" content="#0072ce">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title><?= isset($page_title) ? htmlspecialchars($page_title) . ' - ' : '' ?>SIGAP - Sistem Informasi Gelar Alat & Perlengkapan</title>
+    <link rel="manifest" href="<?= base_url('manifest.json') ?>">
+    <link rel="icon" type="image/svg+xml" href="<?= base_url('assets/icons/icon.svg') ?>">
+    <link rel="apple-touch-icon" href="<?= base_url('assets/icons/icon-192.png') ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -204,7 +211,51 @@ if ($user && $user['role'] === 'manajemen') {
             <?php endif; ?>
 
 <?php else: ?>
-<!-- Jika belum login, tampilkan header minimal -->
-<main class="main-content">
-    <div class="container">
+<!-- Header Publik / Mode Petugas Lapangan Tanpa Login -->
+<header class="topbar no-print" style="left:0; right:0; padding:0 24px; background:rgba(255,255,255,0.92); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+    <div style="display:flex; align-items:center; gap:12px;">
+        <div style="width:38px; height:38px; border-radius:var(--radius-md); background:linear-gradient(135deg, #2563eb, #1d4ed8); display:flex; align-items:center; justify-content:center; color:#ffffff; font-size:1.1rem; box-shadow:0 2px 6px rgba(37,99,235,0.3);">
+            <i class="fa-solid fa-bolt-lightning"></i>
+        </div>
+        <div>
+            <div style="font-weight:800; font-size:1.05rem; letter-spacing:-0.02em; line-height:1.2; color:var(--text-main);">
+                <a href="<?= base_url('inspeksi/index.php') ?>" style="color:var(--text-main); text-decoration:none;">SIGAP</a>
+            </div>
+            <div style="font-size:0.725rem; color:var(--text-muted); line-height:1.1;">Digitalisasi Gelar Alat & K3 &middot; PLN ULP Balong</div>
+        </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+        <span class="badge" style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; font-size:0.72rem; padding:4px 10px;">
+            <i class="fa-solid fa-clipboard-check"></i> Mode Petugas Lapangan
+        </span>
+        <a href="<?= base_url('auth/login.php') ?>" class="btn btn-outline btn-sm" style="font-size:0.8rem; padding:6px 14px; border-radius:var(--radius-md); display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-lock"></i> Login Manajemen
+        </a>
+    </div>
+</header>
+
+<div class="app-layout">
+    <main class="main-content" style="width:100%;">
+        <div class="container">
+            <?php if ($flash_success = get_flash('success')): ?>
+                <div class="alert alert-success">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <div><?= $flash_success ?></div>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($flash_error = get_flash('error')): ?>
+                <div class="alert alert-error">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <div><?= $flash_error ?></div>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($flash_warning = get_flash('warning')): ?>
+                <div class="alert alert-warning">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <div><?= $flash_warning ?></div>
+                </div>
+            <?php endif; ?>
 <?php endif; ?>
+
