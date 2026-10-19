@@ -67,15 +67,47 @@ if (!$regu) {
     header("Location: index.php"); exit;
 }
 
+// Deteksi tipe armada/regu (misal: 'roda_2', 'roda_3', 'yandal_mobil', 'ulc_motor', atau 'all')
+$detected_regu_tipe = isset($regu['regu_tipe']) && !empty($regu['regu_tipe']) && $regu['regu_tipe'] !== 'all' ? $regu['regu_tipe'] : 'all';
+
+if ($detected_regu_tipe === 'all') {
+    $regu_info_str = strtolower(($regu['nama_regu'] ?? '') . ' ' . ($regu['kendaraan'] ?? '') . ' ' . ($regu['keterangan'] ?? ''));
+    if ($jenis_pekerjaan === 'sr_app') {
+        if (strpos($regu_info_str, 'roda 2') !== false || strpos($regu_info_str, 'roda_2') !== false || strpos($regu_info_str, 'r2') !== false) {
+            $detected_regu_tipe = 'roda_2';
+        } elseif (strpos($regu_info_str, 'roda 3') !== false || strpos($regu_info_str, 'roda_3') !== false || strpos($regu_info_str, 'r3') !== false) {
+            $detected_regu_tipe = 'roda_3';
+        }
+    } elseif ($jenis_pekerjaan === 'yandal') {
+        if (strpos($regu_info_str, 'ulc') !== false || strpos($regu_info_str, 'verza') !== false || strpos($regu_info_str, 'motor') !== false) {
+            $detected_regu_tipe = 'ulc_motor';
+        } else {
+            $detected_regu_tipe = 'yandal_mobil';
+        }
+    }
+}
+
 // Ambil template checklist items (berurutan berdasarkan kategori & urutan)
-$stmt_items = $pdo->prepare("
-    SELECT tci.*, mb.nama_barang, mb.kategori, mb.satuan_default, mb.gambar_referensi
-    FROM template_checklist_item tci
-    JOIN master_barang mb ON tci.master_barang_id = mb.id
-    WHERE tci.jenis_pekerjaan = :jenis
-    ORDER BY mb.kategori, tci.urutan
-");
-$stmt_items->execute([':jenis' => $jenis_pekerjaan]);
+if ($detected_regu_tipe !== 'all') {
+    $stmt_items = $pdo->prepare("
+        SELECT tci.*, mb.nama_barang, mb.kategori, mb.satuan_default, mb.gambar_referensi
+        FROM template_checklist_item tci
+        JOIN master_barang mb ON tci.master_barang_id = mb.id
+        WHERE tci.jenis_pekerjaan = :jenis
+          AND tci.regu_tipe IN ('all', :regu_tipe)
+        ORDER BY mb.kategori, tci.urutan
+    ");
+    $stmt_items->execute([':jenis' => $jenis_pekerjaan, ':regu_tipe' => $detected_regu_tipe]);
+} else {
+    $stmt_items = $pdo->prepare("
+        SELECT tci.*, mb.nama_barang, mb.kategori, mb.satuan_default, mb.gambar_referensi
+        FROM template_checklist_item tci
+        JOIN master_barang mb ON tci.master_barang_id = mb.id
+        WHERE tci.jenis_pekerjaan = :jenis
+        ORDER BY mb.kategori, tci.urutan
+    ");
+    $stmt_items->execute([':jenis' => $jenis_pekerjaan]);
+}
 $all_items = $stmt_items->fetchAll();
 
 // Kelompokkan items per kategori

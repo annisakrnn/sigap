@@ -290,8 +290,14 @@ require_once __DIR__ . '/../../includes/header.php';
                                     <span class="badge" style="background:#e2e8f0; color:#334155; font-size:0.7rem;">Semua</span>
                                 <?php elseif ($row['regu_tipe'] === 'roda_3'): ?>
                                     <span class="badge" style="background:#e0e7ff; color:#3730a3; font-size:0.7rem;">Roda 3</span>
-                                <?php else: ?>
+                                <?php elseif ($row['regu_tipe'] === 'roda_2'): ?>
                                     <span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.7rem;">Roda 2</span>
+                                <?php elseif ($row['regu_tipe'] === 'yandal_mobil'): ?>
+                                    <span class="badge" style="background:#dbeafe; color:#1e40af; font-size:0.7rem;">Mobil Yandal</span>
+                                <?php elseif ($row['regu_tipe'] === 'ulc_motor'): ?>
+                                    <span class="badge" style="background:#fef3c7; color:#b45309; font-size:0.7rem;">ULC Motor</span>
+                                <?php else: ?>
+                                    <span class="badge" style="background:#f1f5f9; color:#475569; font-size:0.7rem;"><?= htmlspecialchars($row['regu_tipe']) ?></span>
                                 <?php endif; ?>
                             </td>
                             <td style="text-align:center;">
@@ -379,11 +385,13 @@ require_once __DIR__ . '/../../includes/header.php';
                 <label class="form-label" for="reguTipe">Berlaku untuk Tipe Regu</label>
                 <select id="reguTipe" name="regu_tipe" class="form-control">
                     <option value="all">Semua Tipe Regu (Default)</option>
-                    <option value="roda_3">Khusus Armada Roda 3</option>
-                    <option value="roda_2">Khusus Armada Roda 2</option>
+                    <option value="roda_3">Khusus Armada Roda 3 (SR APP)</option>
+                    <option value="roda_2">Khusus Armada Roda 2 (SR APP)</option>
+                    <option value="yandal_mobil">Khusus Mobil Yandal Hilux (YANDAL)</option>
+                    <option value="ulc_motor">Khusus ULC Sepeda Motor Verza (YANDAL)</option>
                 </select>
                 <small style="color:var(--text-muted); font-size:0.75rem; margin-top:4px; display:block;">
-                    Khusus pekerjaan SR APP 1 Phasa yang memiliki pembagian armada Roda 2 dan Roda 3.
+                    Gunakan jika item checklist dikhususkan untuk jenis armada tertentu (SR APP Roda 2/3 atau Yandal Mobil/ULC Motor).
                 </small>
             </div>
 
