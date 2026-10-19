@@ -343,16 +343,18 @@ require_once __DIR__ . '/../includes/header.php';
                                         class="foto-item-input" 
                                         accept="image/*" capture="environment"
                                         style="display:none;" id="fotoInput_<?= $item['id'] ?>">
-                                    <button type="button" class="btn btn-outline btn-sm btn-foto-cam" 
-                                        onclick="document.getElementById('fotoInput_<?= $item['id'] ?>').click()"
-                                        id="btnFoto_<?= $item['id'] ?>" title="Foto Temuan">
-                                        <i class="fa-solid fa-camera"></i>
-                                    </button>
-                                    <?php if (!empty($foto_val)): ?>
-                                        <div style="margin-top:4px; font-size:0.65rem; color:#10b981;">
-                                            <i class="fa-solid fa-check"></i> Ada foto
-                                        </div>
-                                    <?php endif; ?>
+                                    <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
+                                        <button type="button" class="btn btn-outline btn-sm btn-foto-cam" 
+                                            onclick="openLiveCamera('<?= $item['id'] ?>', '<?= addslashes(htmlspecialchars($item['nama_barang'])) ?>')"
+                                            id="btnFoto_<?= $item['id'] ?>" title="Buka Kamera Langsung">
+                                            <i class="fa-solid fa-camera"></i>
+                                        </button>
+                                        <?php if (!empty($foto_val)): ?>
+                                            <div style="margin-top:2px; font-size:0.65rem; color:#10b981;" id="lblFoto_<?= $item['id'] ?>">
+                                                <i class="fa-solid fa-check"></i> Ada foto
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -382,11 +384,13 @@ require_once __DIR__ . '/../includes/header.php';
                             </div>
                             <div style="text-align:right;">
                                 <input type="file" name="foto_item_<?= $item['id'] ?>" accept="image/*" capture="environment" style="display:none;" id="fotoInputM_<?= $item['id'] ?>">
-                                <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('fotoInputM_<?= $item['id'] ?>').click()" title="Foto Temuan">
+                                <button type="button" class="btn btn-outline btn-sm btn-foto-cam" 
+                                    onclick="openLiveCamera('<?= $item['id'] ?>', '<?= addslashes(htmlspecialchars($item['nama_barang'])) ?>')" 
+                                    id="btnFotoM_<?= $item['id'] ?>" title="Buka Kamera Langsung">
                                     <i class="fa-solid fa-camera"></i>
                                 </button>
                                 <?php if (!empty($foto_val)): ?>
-                                    <div style="font-size:0.65rem; color:#10b981; margin-top:2px;">
+                                    <div style="font-size:0.65rem; color:#10b981; margin-top:2px;" id="lblFotoM_<?= $item['id'] ?>">
                                         <i class="fa-solid fa-check"></i> Foto tersimpan
                                     </div>
                                 <?php endif; ?>
@@ -451,18 +455,30 @@ require_once __DIR__ . '/../includes/header.php';
             </h2>
         </div>
         <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Upload Foto Bersama Regu / Apel Pasukan</label>
+            <label class="form-label">Foto Bersama Regu / Apel Pasukan</label>
             <?php if (!empty($edit_header['foto_kegiatan'])): ?>
-                <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+                <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px;" id="boxFotoKegiatanLama">
                     <img src="<?= base_url('uploads/foto_kegiatan/' . htmlspecialchars($edit_header['foto_kegiatan'])) ?>" style="max-height:70px; border-radius:6px; border:1px solid var(--border-color);">
                     <div style="font-size:0.75rem; color:var(--text-muted);">
-                        Foto sebelumnya tersimpan. Unggah file baru jika ingin mengganti.
+                        Foto sebelumnya tersimpan. Ambil foto baru jika ingin mengganti.
                         <input type="hidden" name="existing_foto_kegiatan" value="<?= htmlspecialchars($edit_header['foto_kegiatan']) ?>">
                     </div>
                 </div>
             <?php endif; ?>
-            <input type="file" name="foto_kegiatan" class="form-control" accept="image/*" capture="environment">
-            <small style="color:var(--text-muted);">Foto bersama seluruh anggota regu saat apel gelar alat. Maks 5MB (JPG/PNG/WEBP).</small>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+                <button type="button" class="btn btn-primary btn-sm" onclick="openLiveCamera('kegiatan', 'Foto Bersama Regu / Apel Pasukan')">
+                    <i class="fa-solid fa-camera"></i> Ambil Foto Langsung (Live Camera)
+                </button>
+                <label class="btn btn-outline btn-sm" style="margin-bottom:0; cursor:pointer;" title="Pilih dari Galeri atau File">
+                    <i class="fa-solid fa-folder-open"></i> Ambil dari File
+                    <input type="file" name="foto_kegiatan" id="fotoKegiatanInput" accept="image/*" capture="environment" style="display:none;">
+                </label>
+            </div>
+            <div id="kegiatanPreviewWrap" style="display:none; margin-top:8px;">
+                <img id="kegiatanPreviewImg" style="max-height:140px; border-radius:8px; border:2px solid #10b981; object-fit:cover;">
+                <div id="kegiatanCompressBadge" style="margin-top:4px;"></div>
+            </div>
+            <small style="color:var(--text-muted);">Foto bersama seluruh anggota regu saat apel gelar alat. Maks 15MB (JPG/PNG/WEBP).</small>
         </div>
     </div>
 
@@ -604,41 +620,68 @@ document.addEventListener('DOMContentLoaded', function() {
     // ========================================
     document.querySelectorAll('input[type="file"][name^="foto_item_"]').forEach(input => {
         input.addEventListener('change', async function() {
-            const itemId = this.name.replace('foto_item_', '');
-            const card = document.getElementById('card_' + itemId) || document.getElementById('row_' + itemId);
-            if (card && this.files[0]) {
+            const itemId = this.id.replace('fotoInput_', '').replace('fotoInputM_', '');
+            const card = document.getElementById('card_' + itemId);
+            const row = document.getElementById('row_' + itemId);
+            if (this.files && this.files[0]) {
                 const origFile = this.files[0];
                 const origSizeKb = Math.round(origFile.size / 1024);
+                const url = URL.createObjectURL(origFile);
 
-                let badge = card.querySelector('.compress-badge');
-                if (!badge) {
-                    badge = document.createElement('div');
-                    badge.className = 'compress-badge';
-                    badge.style.cssText = 'font-size:0.7rem;color:#0369a1;background:#e0f2fe;padding:2px 6px;border-radius:4px;margin-top:4px;display:inline-block;';
-                    card.appendChild(badge);
-                }
-                badge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengompres...';
+                [card, row].forEach(parent => {
+                    if (!parent) return;
+
+                    // Update / Buat Badge Status
+                    let badge = parent.querySelector('.compress-badge');
+                    if (!badge) {
+                        badge = document.createElement('div');
+                        badge.className = 'compress-badge';
+                        badge.style.cssText = 'font-size:0.68rem; color:#0369a1; background:#e0f2fe; padding:2px 6px; border-radius:4px; margin-top:3px; display:inline-block; font-weight:600;';
+                        parent.appendChild(badge);
+                    }
+                    badge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengoptimalkan...';
+
+                    // Update / Buat Thumbnail Preview
+                    let prevEl = parent.querySelector('.foto-preview');
+                    if (!prevEl) {
+                        prevEl = document.createElement('img');
+                        prevEl.className = 'foto-preview';
+                        prevEl.style.cssText = 'width:44px; height:44px; object-fit:cover; border-radius:6px; border:2px solid #10b981; margin-top:4px; cursor:pointer; display:block;';
+                        prevEl.title = 'Klik perbesar foto';
+                        prevEl.onclick = function() { window.open(this.src, '_blank'); };
+                        parent.appendChild(prevEl);
+                    }
+                    prevEl.src = url;
+
+                    // Update Tombol Kamera Menjadi Hijau Aktif
+                    const camBtn = parent.querySelector('.btn-foto-cam') || parent.querySelector('button[title*="Kamera"]');
+                    if (camBtn) {
+                        camBtn.style.background = '#10b981';
+                        camBtn.style.color = '#ffffff';
+                        camBtn.style.borderColor = '#10b981';
+                        camBtn.title = 'Foto Terambil - Klik untuk Mengulang';
+                        camBtn.innerHTML = '<i class="fa-solid fa-camera"></i> <i class="fa-solid fa-check" style="font-size:0.7rem; margin-left:2px;"></i>';
+                    }
+                });
 
                 try {
                     const compressed = await window.ImageCompressor.compress(origFile, { maxDimension: 1280, quality: 0.8 });
                     const dt = new DataTransfer();
                     dt.items.add(compressed);
-                    input.files = dt.files;
+                    this.files = dt.files;
                     const compSizeKb = Math.round(compressed.size / 1024);
-                    badge.innerHTML = `<i class="fa-solid fa-check"></i> ${origSizeKb}KB &rarr; ${compSizeKb}KB`;
+                    [card, row].forEach(parent => {
+                        if (!parent) return;
+                        const badge = parent.querySelector('.compress-badge');
+                        if (badge) badge.innerHTML = `<i class="fa-solid fa-circle-check" style="color:#10b981;"></i> ${origSizeKb}KB &rarr; ${compSizeKb}KB`;
+                    });
                 } catch(e) {
-                    badge.innerHTML = `<i class="fa-solid fa-check"></i> Siap upload`;
+                    [card, row].forEach(parent => {
+                        if (!parent) return;
+                        const badge = parent.querySelector('.compress-badge');
+                        if (badge) badge.innerHTML = `<i class="fa-solid fa-circle-check" style="color:#10b981;"></i> Foto siap upload`;
+                    });
                 }
-
-                const url = URL.createObjectURL(input.files[0]);
-                let prevEl = card.querySelector('.foto-preview');
-                if (!prevEl) {
-                    prevEl = document.createElement('img');
-                    prevEl.className = 'foto-preview';
-                    prevEl.style.cssText = 'width:50px;height:50px;object-fit:cover;border-radius:6px;border:2px solid #10b981;margin-top:4px;';
-                    card.appendChild(prevEl);
-                }
-                prevEl.src = url;
             }
         });
     });
@@ -646,21 +689,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // ========================================
     // Kompresi Foto Kegiatan Apel
     // ========================================
-    const fotoKegiatanInput = document.querySelector('input[type="file"][name="foto_kegiatan"]');
+    const fotoKegiatanInput = document.getElementById('fotoKegiatanInput');
     if (fotoKegiatanInput) {
         fotoKegiatanInput.addEventListener('change', async function() {
-            if (this.files[0]) {
+            if (this.files && this.files[0]) {
                 const origFile = this.files[0];
                 const origSizeMb = (origFile.size / (1024*1024)).toFixed(1);
-                const parent = this.parentElement;
-                let badge = parent.querySelector('.kegiatan-compress-badge');
-                if (!badge) {
-                    badge = document.createElement('div');
-                    badge.className = 'kegiatan-compress-badge';
-                    badge.style.cssText = 'font-size:0.8rem;color:#047857;background:#d1fae5;padding:4px 8px;border-radius:6px;margin-top:6px;display:inline-block;';
-                    parent.appendChild(badge);
+                const wrap = document.getElementById('kegiatanPreviewWrap');
+                const img = document.getElementById('kegiatanPreviewImg');
+                const badge = document.getElementById('kegiatanCompressBadge');
+                
+                if (wrap && img) {
+                    img.src = URL.createObjectURL(origFile);
+                    wrap.style.display = 'block';
                 }
-                badge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengoptimalkan foto kegiatan...';
+                if (badge) {
+                    badge.innerHTML = '<span style="font-size:0.75rem; color:#0369a1; background:#e0f2fe; padding:2px 8px; border-radius:4px;"><i class="fa-solid fa-spinner fa-spin"></i> Mengoptimalkan...</span>';
+                }
 
                 try {
                     const compressed = await window.ImageCompressor.compress(origFile, { maxDimension: 1600, quality: 0.82 });
@@ -668,9 +713,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     dt.items.add(compressed);
                     this.files = dt.files;
                     const compSizeKb = Math.round(compressed.size / 1024);
-                    badge.innerHTML = `<i class="fa-solid fa-circle-check"></i> Foto dioptimalkan (${origSizeMb}MB &rarr; ${compSizeKb}KB)`;
+                    if (badge) badge.innerHTML = `<span style="font-size:0.75rem; color:#047857; background:#d1fae5; padding:2px 8px; border-radius:4px; font-weight:600;"><i class="fa-solid fa-circle-check"></i> Foto dioptimalkan (${origSizeMb}MB &rarr; ${compSizeKb}KB)</span>`;
                 } catch(e) {
-                    badge.innerHTML = `<i class="fa-solid fa-check"></i> Foto siap diunggah`;
+                    if (badge) badge.innerHTML = `<span style="font-size:0.75rem; color:#047857; background:#d1fae5; padding:2px 8px; border-radius:4px; font-weight:600;"><i class="fa-solid fa-circle-check"></i> Foto siap diunggah</span>`;
                 }
             }
         });
@@ -818,6 +863,343 @@ function kirimForm(action) {
     btn.style.pointerEvents = 'none';
     document.getElementById('formGelarAlat').submit();
 }
+
+// ========================================
+// Fitur Kamera Langsung (Live Camera API)
+// ========================================
+let currentTargetId = null;
+let activeCamStream = null;
+let currentFacingMode = 'environment'; // default kamera belakang HP
+
+async function openLiveCamera(targetId, targetTitle) {
+    currentTargetId = targetId;
+    document.getElementById('liveCamTitle').textContent = targetTitle || 'Ambil Foto';
+    document.getElementById('modalLiveCam').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    retakeLiveSnapshot();
+    await startCameraStream();
+}
+
+function closeLiveCamera() {
+    stopCurrentStream();
+    document.getElementById('modalLiveCam').style.display = 'none';
+    document.body.style.overflow = '';
+    retakeLiveSnapshot();
+}
+
+function stopCurrentStream() {
+    if (activeCamStream) {
+        try {
+            activeCamStream.getTracks().forEach(track => track.stop());
+        } catch(e) {}
+        activeCamStream = null;
+    }
+}
+
+async function startCameraStream() {
+    stopCurrentStream();
+    const loading = document.getElementById('liveCamLoading');
+    const errBox = document.getElementById('liveCamError');
+    const video = document.getElementById('liveCamStream');
+    
+    loading.style.display = 'flex';
+    errBox.style.display = 'none';
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        loading.style.display = 'none';
+        errBox.style.display = 'flex';
+        document.getElementById('liveCamErrorMsg').textContent = "Browser Tidak Mendukung Kamera Langsung";
+        return;
+    }
+
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(d => d.kind === 'videoinput');
+        if (videoDevices.length > 1) {
+            document.getElementById('btnSwitchCam').style.display = 'flex';
+        } else {
+            document.getElementById('btnSwitchCam').style.display = 'none';
+        }
+    } catch(e) {}
+
+    try {
+        const constraints = {
+            video: {
+                facingMode: { ideal: currentFacingMode },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            },
+            audio: false
+        };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        activeCamStream = stream;
+        video.srcObject = stream;
+        video.onloadedmetadata = function() {
+            video.play();
+            loading.style.display = 'none';
+        };
+    } catch (err) {
+        console.warn("Primary camera constraint failed, attempting fallback:", err);
+        try {
+            const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            activeCamStream = fallbackStream;
+            video.srcObject = fallbackStream;
+            video.onloadedmetadata = function() {
+                video.play();
+                loading.style.display = 'none';
+            };
+        } catch (err2) {
+            loading.style.display = 'none';
+            errBox.style.display = 'flex';
+            document.getElementById('liveCamErrorMsg').textContent = "Izin Kamera Ditolak / Kamera Tidak Tersedia";
+        }
+    }
+}
+
+async function toggleFacingCamera() {
+    currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+    const btn = document.getElementById('btnSwitchCam');
+    btn.style.transform = 'rotate(180deg)';
+    setTimeout(() => { btn.style.transform = 'rotate(0deg)'; }, 300);
+    await startCameraStream();
+}
+
+function captureLiveSnapshot() {
+    if (!activeCamStream) return;
+    const video = document.getElementById('liveCamStream');
+    const canvas = document.getElementById('liveCamCanvas');
+    const imgPreview = document.getElementById('liveCamSnapshot');
+    const flash = document.getElementById('liveCamFlash');
+
+    // Visual Flash & Haptic Vibration Feedback
+    flash.style.opacity = '0.9';
+    setTimeout(() => { flash.style.opacity = '0'; }, 120);
+
+    if (navigator.vibrate) {
+        try { navigator.vibrate(50); } catch(e) {}
+    }
+
+    const width = video.videoWidth || 1280;
+    const height = video.videoHeight || 720;
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext('2d');
+    if (currentFacingMode === 'user') {
+        ctx.translate(width, 0);
+        ctx.scale(-1, 1);
+    }
+    ctx.drawImage(video, 0, 0, width, height);
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    imgPreview.src = dataUrl;
+    imgPreview.style.display = 'block';
+    video.style.display = 'none';
+
+    document.getElementById('liveCamGrid').style.display = 'none';
+    document.getElementById('btnSwitchCam').style.display = 'none';
+    document.getElementById('liveCamControlsStreaming').style.display = 'none';
+    document.getElementById('liveCamControlsReview').style.display = 'flex';
+}
+
+function retakeLiveSnapshot() {
+    const video = document.getElementById('liveCamStream');
+    const imgPreview = document.getElementById('liveCamSnapshot');
+    
+    imgPreview.style.display = 'none';
+    video.style.display = 'block';
+    document.getElementById('liveCamGrid').style.display = 'block';
+    document.getElementById('liveCamControlsStreaming').style.display = 'flex';
+    document.getElementById('liveCamControlsReview').style.display = 'none';
+
+    navigator.mediaDevices?.enumerateDevices().then(devices => {
+        const videoDevices = devices.filter(d => d.kind === 'videoinput');
+        if (videoDevices.length > 1) {
+            document.getElementById('btnSwitchCam').style.display = 'flex';
+        }
+    }).catch(() => {});
+}
+
+function acceptLiveSnapshot() {
+    const canvas = document.getElementById('liveCamCanvas');
+    if (!canvas || !canvas.width) return;
+
+    canvas.toBlob(async function(blob) {
+        if (!blob) return;
+        const fileName = (currentTargetId === 'kegiatan') ? 'foto_kegiatan.jpg' : `foto_item_${currentTargetId}.jpg`;
+        const file = new File([blob], fileName, { type: 'image/jpeg', lastModified: Date.now() });
+
+        if (currentTargetId === 'kegiatan') {
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            const inputKegiatan = document.getElementById('fotoKegiatanInput');
+            if (inputKegiatan) {
+                inputKegiatan.files = dt.files;
+                inputKegiatan.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        } else {
+            const dt1 = new DataTransfer();
+            dt1.items.add(file);
+            const inpDesktop = document.getElementById('fotoInput_' + currentTargetId);
+            if (inpDesktop) {
+                inpDesktop.files = dt1.files;
+                inpDesktop.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            const dt2 = new DataTransfer();
+            dt2.items.add(file);
+            const inpMobile = document.getElementById('fotoInputM_' + currentTargetId);
+            if (inpMobile) {
+                inpMobile.files = dt2.files;
+                inpMobile.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+
+        closeLiveCamera();
+    }, 'image/jpeg', 0.88);
+}
+
+function triggerNativeFileInput() {
+    closeLiveCamera();
+    if (currentTargetId === 'kegiatan') {
+        const inp = document.getElementById('fotoKegiatanInput');
+        if (inp) inp.click();
+    } else {
+        const inpDesktop = document.getElementById('fotoInput_' + currentTargetId);
+        const inpMobile = document.getElementById('fotoInputM_' + currentTargetId);
+        if (inpDesktop && window.innerWidth >= 992) {
+            inpDesktop.click();
+        } else if (inpMobile) {
+            inpMobile.click();
+        } else if (inpDesktop) {
+            inpDesktop.click();
+        }
+    }
+}
+
+// Tutup live camera dengan tombol ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('modalLiveCam');
+        if (modal && modal.style.display === 'flex') {
+            closeLiveCamera();
+        }
+    }
+});
 </script>
+
+<!-- ===== Modal Live Camera Universal ===== -->
+<div id="modalLiveCam" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(15, 23, 42, 0.94); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:12px;">
+    <div style="background:#0f172a; border:1px solid #334155; border-radius:20px; width:100%; max-width:540px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.6); display:flex; flex-direction:column;">
+        
+        <!-- Modal Header -->
+        <div style="padding:14px 18px; border-bottom:1px solid #1e293b; display:flex; justify-content:space-between; align-items:center; color:#f8fafc; background:#0f172a;">
+            <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
+                <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg, #2563eb, #1d4ed8); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <i class="fa-solid fa-camera" style="color:white; font-size:1rem;"></i>
+                </div>
+                <div style="overflow:hidden;">
+                    <div style="font-size:0.7rem; text-transform:uppercase; color:#94a3b8; font-weight:700; letter-spacing:0.5px;">Kamera Langsung</div>
+                    <div id="liveCamTitle" style="font-size:0.95rem; font-weight:700; color:#ffffff; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">Ambil Foto</div>
+                </div>
+            </div>
+            <button type="button" onclick="closeLiveCamera()" style="background:transparent; border:none; color:#94a3b8; font-size:1.6rem; cursor:pointer; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; line-height:1;" title="Tutup Kamera">&times;</button>
+        </div>
+
+        <!-- Viewfinder Viewport -->
+        <div style="position:relative; width:100%; background:#000000; display:flex; align-items:center; justify-content:center; min-height:340px; max-height:62vh; overflow:hidden;">
+            <!-- Live Video -->
+            <video id="liveCamStream" autoplay playsinline muted style="width:100%; height:100%; max-height:62vh; object-fit:cover; display:block;"></video>
+            
+            <!-- Snapshot Preview Image (Hidden when streaming) -->
+            <img id="liveCamSnapshot" style="display:none; width:100%; height:100%; max-height:62vh; object-fit:contain; background:#000;" alt="Hasil Foto">
+            
+            <!-- Hidden Canvas for capture -->
+            <canvas id="liveCamCanvas" style="display:none;"></canvas>
+
+            <!-- Loading overlay -->
+            <div id="liveCamLoading" style="position:absolute; inset:0; background:rgba(15,23,42,0.85); display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; gap:12px; z-index:2;">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size:2.2rem; color:#3b82f6;"></i>
+                <span style="font-size:0.875rem; font-weight:500;">Membuka kamera langsung...</span>
+            </div>
+
+            <!-- Error fallback overlay -->
+            <div id="liveCamError" style="display:none; position:absolute; inset:0; background:#0f172a; padding:24px; text-align:center; flex-direction:column; align-items:center; justify-content:center; color:#fff; gap:14px; z-index:3;">
+                <div style="width:54px; height:54px; border-radius:50%; background:rgba(245,158,11,0.15); display:flex; align-items:center; justify-content:center; margin:0 auto;">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size:1.8rem; color:#f59e0b;"></i>
+                </div>
+                <div style="font-weight:700; font-size:1rem;" id="liveCamErrorMsg">Akses Kamera Tidak Tersedia</div>
+                <p style="font-size:0.825rem; color:#94a3b8; max-width:340px; margin:0 auto; line-height:1.5;">Browser membutuhkan izin kamera, atau perangkat tidak memiliki kamera yang aktif. Anda dapat langsung memilih foto dari galeri atau kamera sistem.</p>
+                <button type="button" class="btn btn-primary btn-sm" onclick="triggerNativeFileInput()" style="padding:8px 18px; font-weight:600;">
+                    <i class="fa-solid fa-folder-open"></i> Buka Kamera / File Sistem
+                </button>
+            </div>
+
+            <!-- Viewfinder Grid & Corner Guides -->
+            <div id="liveCamGrid" style="position:absolute; inset:0; pointer-events:none; border:2px dashed rgba(255,255,255,0.18); margin:16px; border-radius:12px;">
+                <div style="position:absolute; top:8px; left:8px; background:rgba(239,68,68,0.92); color:#fff; font-size:0.65rem; font-weight:700; padding:3px 9px; border-radius:20px; display:flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(0,0,0,0.4); letter-spacing:0.5px;">
+                    <span style="width:7px; height:7px; border-radius:50%; background:#fff; display:inline-block; animation:liveCamBlink 1s infinite;"></span>
+                    LIVE KAMERA
+                </div>
+            </div>
+
+            <!-- Switch Camera Button (rear/front toggle) -->
+            <button type="button" id="btnSwitchCam" onclick="toggleFacingCamera()" title="Putar Kamera" style="position:absolute; top:16px; right:16px; width:42px; height:42px; border-radius:50%; background:rgba(15,23,42,0.7); border:1px solid rgba(255,255,255,0.3); color:#fff; font-size:1.15rem; display:none; align-items:center; justify-content:center; cursor:pointer; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); transition:transform 0.2s; z-index:4;">
+                <i class="fa-solid fa-camera-rotate"></i>
+            </button>
+
+            <!-- White Flash Overlay -->
+            <div id="liveCamFlash" style="position:absolute; inset:0; background:white; opacity:0; pointer-events:none; transition:opacity 0.12s ease-out; z-index:5;"></div>
+        </div>
+
+        <!-- Controls Footer -->
+        <div style="padding:16px 20px; background:#0f172a; border-top:1px solid #1e293b;">
+            <!-- Streaming State: Shutter -->
+            <div id="liveCamControlsStreaming" style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
+                <button type="button" onclick="triggerNativeFileInput()" class="btn btn-outline btn-sm" style="color:#94a3b8; border-color:#334155; background:transparent; font-size:0.8rem; padding:8px 14px;" title="Ambil dari Galeri atau File">
+                    <i class="fa-solid fa-folder-open"></i> File / Galeri
+                </button>
+
+                <!-- Big Shutter Button -->
+                <button type="button" id="btnLiveCamShutter" onclick="captureLiveSnapshot()" title="Jepret Foto" style="width:70px; height:70px; border-radius:50%; background:#ffffff; border:4px solid #3b82f6; box-shadow:0 0 0 4px rgba(59,130,246,0.25), 0 8px 18px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; cursor:pointer; outline:none; transition:transform 0.1s, box-shadow 0.1s;">
+                    <span style="width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg, #ef4444, #dc2626); display:flex; align-items:center; justify-content:center; color:white; font-size:1.35rem; box-shadow:inset 0 2px 4px rgba(0,0,0,0.2);">
+                        <i class="fa-solid fa-camera"></i>
+                    </span>
+                </button>
+
+                <button type="button" onclick="closeLiveCamera()" class="btn btn-outline btn-sm" style="color:#94a3b8; border-color:#334155; background:transparent; font-size:0.8rem; padding:8px 14px;">
+                    Batal
+                </button>
+            </div>
+
+            <!-- Review State: Retake / Accept -->
+            <div id="liveCamControlsReview" style="display:none; align-items:center; justify-content:center; gap:12px;">
+                <button type="button" onclick="retakeLiveSnapshot()" class="btn btn-outline" style="color:#f8fafc; border-color:#475569; background:#1e293b; padding:10px 18px; font-weight:600; font-size:0.9rem;">
+                    <i class="fa-solid fa-rotate-left"></i> Foto Ulang
+                </button>
+                <button type="button" onclick="acceptLiveSnapshot()" class="btn btn-primary" style="background:#10b981; border-color:#10b981; padding:10px 22px; font-weight:700; font-size:0.95rem; box-shadow:0 4px 14px rgba(16,185,129,0.35);">
+                    <i class="fa-solid fa-circle-check"></i> Gunakan Foto Ini
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+@keyframes liveCamBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+}
+#btnLiveCamShutter:active {
+    transform: scale(0.92);
+}
+.btn-foto-cam {
+    transition: all 0.2s ease;
+}
+.btn-foto-cam:hover {
+    transform: scale(1.05);
+}
+</style>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
