@@ -296,6 +296,10 @@ require_once __DIR__ . '/../../includes/header.php';
                                     <span class="badge" style="background:#dbeafe; color:#1e40af; font-size:0.7rem;">Mobil Yandal</span>
                                 <?php elseif ($row['regu_tipe'] === 'ulc_motor'): ?>
                                     <span class="badge" style="background:#fef3c7; color:#b45309; font-size:0.7rem;">ULC Motor</span>
+                                <?php elseif ($row['regu_tipe'] === 'har_truk'): ?>
+                                    <span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:0.7rem;">Truk Hino (HAR A)</span>
+                                <?php elseif ($row['regu_tipe'] === 'har_carry'): ?>
+                                    <span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.7rem;">Mobil Carry (HAR B)</span>
                                 <?php else: ?>
                                     <span class="badge" style="background:#f1f5f9; color:#475569; font-size:0.7rem;"><?= htmlspecialchars($row['regu_tipe']) ?></span>
                                 <?php endif; ?>
@@ -389,9 +393,11 @@ require_once __DIR__ . '/../../includes/header.php';
                     <option value="roda_2">Khusus Armada Roda 2 (SR APP)</option>
                     <option value="yandal_mobil">Khusus Mobil Yandal Hilux (YANDAL)</option>
                     <option value="ulc_motor">Khusus ULC Sepeda Motor Verza (YANDAL)</option>
+                    <option value="har_truk">Khusus Truk Hino (HAR A)</option>
+                    <option value="har_carry">Khusus Mobil Carry (HAR B)</option>
                 </select>
                 <small style="color:var(--text-muted); font-size:0.75rem; margin-top:4px; display:block;">
-                    Gunakan jika item checklist dikhususkan untuk jenis armada tertentu (SR APP Roda 2/3 atau Yandal Mobil/ULC Motor).
+                    Gunakan jika item checklist dikhususkan untuk jenis armada tertentu (SR APP Roda 2/3, Yandal Mobil/ULC Motor, atau HAR Truk/Carry).
                 </small>
             </div>
 

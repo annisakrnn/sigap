@@ -103,8 +103,8 @@ try {
         ['nama_regu' => 'Regu Roda 2 SR APP Balong', 'jenis_pekerjaan' => 'sr_app', 'regu_tipe' => 'roda_2', 'kendaraan' => 'Kendaraan Roda Dua', 'nopol' => 'AE 4567 R2', 'keterangan' => 'Penyambungan & Bongkar SR APP 1 Phasa Roda 2'],
         ['nama_regu' => 'Mobil Yandal Hilux Rangga', 'jenis_pekerjaan' => 'yandal', 'regu_tipe' => 'yandal_mobil', 'kendaraan' => 'Hilux Rangga', 'nopol' => 'AE 8297 BH', 'keterangan' => 'Pelayanan Gangguan Distribusi 24 Jam'],
         ['nama_regu' => 'Regu ULC Sepeda Motor', 'jenis_pekerjaan' => 'yandal', 'regu_tipe' => 'ulc_motor', 'kendaraan' => 'Honda Verza', 'nopol' => 'E 2225 CG', 'keterangan' => 'Unit Layanan Cepat Gangguan'],
-        ['nama_regu' => 'Regu HAR A Truk Hino', 'jenis_pekerjaan' => 'har', 'regu_tipe' => 'all', 'kendaraan' => 'Truk Hino', 'nopol' => 'AE 8280 BH', 'keterangan' => 'Pemeliharaan Preventif & Korektif Jaringan'],
-        ['nama_regu' => 'Regu HAR B Mobil Carry', 'jenis_pekerjaan' => 'har', 'regu_tipe' => 'all', 'kendaraan' => 'Suzuki Carry', 'nopol' => 'E 8255 BH', 'keterangan' => 'Pemeliharaan Gardu & JTR'],
+        ['nama_regu' => 'Regu HAR A Truk Hino', 'jenis_pekerjaan' => 'har', 'regu_tipe' => 'har_truk', 'kendaraan' => 'Truk Hino', 'nopol' => 'AE 8280 BH', 'keterangan' => 'Pemeliharaan Preventif & Korektif Jaringan'],
+        ['nama_regu' => 'Regu HAR B Mobil Carry', 'jenis_pekerjaan' => 'har', 'regu_tipe' => 'har_carry', 'kendaraan' => 'Suzuki Carry', 'nopol' => 'E 8255 BH', 'keterangan' => 'Pemeliharaan Gardu & JTR'],
     ];
 
     $stmt_regu = $pdo->prepare("INSERT INTO regu (id, nama_regu, jenis_pekerjaan, regu_tipe, kendaraan, nopol, keterangan)
@@ -359,6 +359,54 @@ try {
         ['Ban Cadangan', 'kendaraan_pendukung', 'Psg', 1],
     ];
 
+    // E. HAR Items (Khusus Regu HAR B Mobil Carry - E 8255 BH) - 39 Item
+    $har_carry_items = [
+        // ===== ALAT KERJA (23 Item: No 1 - 23) =====
+        ['Tangga Fiber ( 2 section ladder ) 9,6 mtr', 'alat_kerja', 'Bh', 1],
+        ['Telescopic hotstick 20 kV; 10,5 mtr', 'alat_kerja', 'Bh', 1],
+        ['Chain saw 14"', 'alat_kerja', 'Bh', 2],
+        ['Tool set lengkap (besar) mobil', 'alat_kerja', 'Bh', 1],
+        ['Head Lamp 70 watt charger', 'alat_kerja', 'Bh', 2],
+        ['Lampu senter battery (Re-charger)', 'alat_kerja', 'Bh', 1],
+        ['Lampu Sorot Halogen 50 Watt', 'alat_kerja', 'Bh', 1],
+        ['Power Inverter 100 W', 'alat_kerja', 'Bh', 1],
+        ['Fuse Puller', 'alat_kerja', 'Bh', 1],
+        ['Parang', 'alat_kerja', 'Bh', 4],
+        ['Angkus', 'alat_kerja', 'Bh', 2],
+        ['Handle LBS Berisolasi', 'alat_kerja', 'Set', 1],
+        ['Smarthphone (RAM 8 GB, 128 GB)', 'alat_kerja', 'Bh', 1],
+        ['Handheld Holder Smarthphone', 'alat_kerja', 'Unit', 1],
+        ['Power bank 20.000 mAh', 'alat_kerja', 'Bh', 1],
+        ['GPS Tracker', 'alat_kerja', 'Unit', 1],
+        ['Kunci L hexa', 'alat_kerja', 'Set', 1],
+        ['Kunci L bintang', 'alat_kerja', 'Set', 1],
+        ['Tali Nilon 12 mm 20 meter', 'alat_kerja', 'Bh', 1],
+        ['Tali Manila 12mm2 (20m)', 'alat_kerja', 'Bh', 1],
+        ['Tali Tampar 20 Mtr', 'alat_kerja', 'Bh', 1],
+        ['Tali Pengikat Tangga', 'alat_kerja', 'Bh', 1],
+        ['Majun', 'alat_kerja', 'Lot', 1],
+
+        // ===== ALAT K3 BEREGU (13 Item: No 1 - 13) =====
+        ['Full Body Hardness + double lanyard', 'k3_safety', 'Bh', 2],
+        ['Sarung Tangan Tahan Tegangan 1kV (karet)', 'k3_safety', 'Psg', 1],
+        ['Sarung Tangan 30 kV kelas 3', 'k3_safety', 'Psg', 1],
+        ['Sepatu karet 30 kV kelas 3', 'k3_safety', 'Psg', 1],
+        ['Sepatu Boots', 'k3_safety', 'Psg', 1],
+        ['Voltage Detector (Low & High Voltage) Non Contact', 'k3_safety', 'Bh', 1],
+        ['Tanda Peringatan kerja', 'k3_safety', 'Bh', 2],
+        ['LoTo (Lock Out dan Tag Out), Gembok & Rantai', 'k3_safety', 'Bh', 2],
+        ['Rantai Plastik 10 m', 'k3_safety', 'Bh', 1],
+        ['Traffic Cone', 'k3_safety', 'Set', 2],
+        ['Tempat penyimpanan sarung tangan 20 kv', 'k3_safety', 'Bh', 1],
+        ['Kotak P3K lengkap isi', 'k3_safety', 'Bh', 1],
+        ['APAR 3 kg', 'k3_safety', 'Unit', 1],
+
+        // ===== LAIN LAIN (3 Item: No 1 - 3) =====
+        ['Dongkrak + Kunci Ban', 'kendaraan_pendukung', 'Set', 1],
+        ['Kondisi Ban', 'kendaraan_pendukung', 'Bh', 4],
+        ['Ban Cadangan', 'kendaraan_pendukung', 'Psg', 1],
+    ];
+
     $stmt_barang = $pdo->prepare("INSERT INTO master_barang (nama_barang, kategori, satuan_default) 
         VALUES (:nama_barang, :kategori, :satuan_default)
         ON DUPLICATE KEY UPDATE kategori = VALUES(kategori), satuan_default = VALUES(satuan_default)");
@@ -409,8 +457,9 @@ try {
     $insert_template_group($yandal_items, 'yandal', 'yandal_mobil');
     $insert_template_group($ulc_items, 'yandal', 'ulc_motor');
     
-    // Template HAR mandiri (tidak menggabungkan Yandal & ULC)
-    $insert_template_group($har_items, 'har');
+    // Template HAR Truk Hino (HAR A) & Mobil Carry (HAR B)
+    $insert_template_group($har_items, 'har', 'har_truk');
+    $insert_template_group($har_carry_items, 'har', 'har_carry');
 
     output_msg("Master Katalog Peralatan & Template Checklist (P2TL, SR APP, YANDAL, HAR) berhasil dibuat lengkap sesuai dokumen fisik.", 'success');
 

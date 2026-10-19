@@ -84,6 +84,12 @@ if ($detected_regu_tipe === 'all') {
         } else {
             $detected_regu_tipe = 'yandal_mobil';
         }
+    } elseif ($jenis_pekerjaan === 'har') {
+        if (strpos($regu_info_str, 'carry') !== false || strpos($regu_info_str, 'har b') !== false || strpos($regu_info_str, '8255') !== false) {
+            $detected_regu_tipe = 'har_carry';
+        } else {
+            $detected_regu_tipe = 'har_truk';
+        }
     }
 }
 
