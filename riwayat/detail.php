@@ -164,15 +164,22 @@ require_once __DIR__ . '/../includes/header.php';
                     </td></tr>
                 <?php endif; ?>
                 <tr><td style="color:var(--text-muted);padding:4px 0;">Status</td><td><span class="badge badge-<?= $header['status'] ?>"><?= strtoupper($header['status']) ?></span></td></tr>
-                <?php if ($header['status'] === 'approved' && $header['nama_pejabat_manajemen']): ?>
-                    <tr><td style="color:var(--text-muted);padding:4px 0;">Disahkan Oleh</td><td><strong><?= htmlspecialchars($header['nama_pejabat_manajemen']) ?></strong></td></tr>
-                    <tr><td style="color:var(--text-muted);padding:4px 0;">Jabatan Atasan</td><td><?= htmlspecialchars(isset($header['jabatan_manajemen']) ? $header['jabatan_manajemen'] : '-') ?></td></tr>
+                <?php if ($header['nama_pejabat_manajemen']): ?>
+                    <tr><td style="color:var(--text-muted);padding:4px 0;">Verifikator (TL)</td><td><strong><?= htmlspecialchars($header['nama_pejabat_manajemen']) ?></strong> (<?= htmlspecialchars($header['jabatan_manajemen'] ?? 'Team Leader') ?>)</td></tr>
                     <?php if (!empty($header['ttd_manajemen'])): ?>
-                        <tr><td style="color:var(--text-muted);padding:4px 0;vertical-align:top;">TTD Pengesahan</td><td>
-                            <img src="<?= htmlspecialchars($header['ttd_manajemen']) ?>" style="max-height:48px;max-width:140px;border:1px solid #cbd5e1;border-radius:4px;background:#fff;padding:2px;display:block;margin-top:2px;">
+                        <tr><td style="color:var(--text-muted);padding:4px 0;vertical-align:top;">TTD TL</td><td>
+                            <img src="<?= htmlspecialchars($header['ttd_manajemen']) ?>" style="max-height:42px;max-width:130px;border:1px solid #cbd5e1;border-radius:4px;background:#fff;padding:2px;display:block;margin-top:2px;">
                         </td></tr>
                     <?php endif; ?>
-                    <tr><td style="color:var(--text-muted);padding:4px 0;">Tgl Pengesahan</td><td><?= date('d/m/Y H:i', strtotime($header['tanggal_approval'])) ?></td></tr>
+                <?php endif; ?>
+                <tr><td style="color:var(--text-muted);padding:4px 0;">Pengesahan (Manager)</td><td><strong><?= htmlspecialchars(!empty($header['nama_manager']) ? $header['nama_manager'] : 'Manager ULP') ?></strong></td></tr>
+                <?php if (!empty($header['ttd_manager'])): ?>
+                    <tr><td style="color:var(--text-muted);padding:4px 0;vertical-align:top;">TTD Manager</td><td>
+                        <img src="<?= htmlspecialchars($header['ttd_manager']) ?>" style="max-height:42px;max-width:130px;border:1px solid #cbd5e1;border-radius:4px;background:#fff;padding:2px;display:block;margin-top:2px;">
+                    </td></tr>
+                <?php endif; ?>
+                <?php if (!empty($header['tanggal_approval'])): ?>
+                    <tr><td style="color:var(--text-muted);padding:4px 0;">Tgl Approval TL</td><td><?= date('d/m/Y H:i', strtotime($header['tanggal_approval'])) ?></td></tr>
                 <?php endif; ?>
             </table>
         </div>

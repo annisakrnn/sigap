@@ -122,14 +122,14 @@ $kondisi_label_print = [
         .main-table .cond-rusak { text-align: center; font-weight: bold; color: #7b241c; background: #fdebd0; }
         .main-table .cond-waktu_ganti { text-align: center; font-weight: bold; color: #784212; background: #fef9e7; }
 
-        /* TTD SECTION */
+        /* TTD SECTION 3-TIER: Petugas -> TL/Manajemen -> Manager */
         .ttd-section { margin-top: 10px; }
-        .ttd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .ttd-box { border: 1px solid #000; padding: 8px 10px; text-align: center; }
-        .ttd-box .ttd-title { font-weight: bold; font-size: 9pt; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-bottom: 6px; }
-        .ttd-box .ttd-canvas { height: 60px; display: flex; align-items: center; justify-content: center; margin-bottom: 6px; }
-        .ttd-box .ttd-name { font-weight: bold; font-size: 9pt; border-top: 1px solid #000; margin-top: 6px; padding-top: 4px; }
-        .ttd-box .ttd-jabatan { font-size: 8pt; color: #333; }
+        .ttd-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .ttd-box { border: 1px solid #000; padding: 6px 8px; text-align: center; background: #fff; }
+        .ttd-box .ttd-title { font-weight: bold; font-size: 8.5pt; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-bottom: 4px; }
+        .ttd-box .ttd-canvas { height: 55px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+        .ttd-box .ttd-name { font-weight: bold; font-size: 8.5pt; border-top: 1px solid #000; margin-top: 4px; padding-top: 3px; }
+        .ttd-box .ttd-jabatan { font-size: 7.5pt; color: #333; line-height: 1.2; }
 
         /* No Print */
         .no-print { background: #0a2540; color: white; text-align: center; padding: 15px; font-family: sans-serif; font-size: 13px; }
@@ -251,37 +251,54 @@ $kondisi_label_print = [
     </div>
     <?php endif; ?>
 
-    <!-- Tanda Tangan -->
+    <!-- Tanda Tangan 3 Tingkat: Petugas -> TL / Manajemen -> Manager -->
     <div class="ttd-section">
         <div class="ttd-grid">
-            <!-- Petugas Pemeriksa -->
+            <!-- 1. Petugas Pemeriksa Lapangan -->
             <div class="ttd-box">
-                <div class="ttd-title">Petugas Pemeriksa Lapangan</div>
+                <div class="ttd-title">Diperiksa Oleh :<br><span style="font-weight:normal;font-size:7.5pt;">Petugas Pelaksana Lapangan</span></div>
                 <div class="ttd-canvas">
                     <?php if (!empty($header['ttd_petugas'])): ?>
-                        <img src="<?= htmlspecialchars($header['ttd_petugas']) ?>" style="max-height:55px;max-width:160px;">
+                        <img src="<?= htmlspecialchars($header['ttd_petugas']) ?>" style="max-height:50px;max-width:140px;">
                     <?php else: ?>
-                        <div style="height:55px;"></div>
+                        <div style="height:50px;"></div>
                     <?php endif; ?>
                 </div>
                 <div class="ttd-name"><?= htmlspecialchars($header['nama_pelaksana_1']) ?></div>
                 <div class="ttd-jabatan"><?= htmlspecialchars($header['jabatan_petugas']) ?></div>
-                <div class="ttd-jabatan" style="margin-top:2px;">Tanggal: <?= date('d/m/Y', strtotime($header['tanggal_inspeksi'])) ?></div>
+                <div class="ttd-jabatan" style="margin-top:2px;">Tgl: <?= date('d/m/Y', strtotime($header['tanggal_inspeksi'])) ?></div>
             </div>
 
-            <!-- Manajemen Atasan / Pengesahan -->
+            <!-- 2. Team Leader / Manajemen -->
             <div class="ttd-box">
-                <div class="ttd-title">Diketahui & Disahkan Oleh</div>
+                <div class="ttd-title">Diverifikasi Oleh :<br><span style="font-weight:normal;font-size:7.5pt;">Team Leader / Manajemen</span></div>
                 <div class="ttd-canvas">
                     <?php if (!empty($header['ttd_manajemen'])): ?>
-                        <img src="<?= htmlspecialchars($header['ttd_manajemen']) ?>" style="max-height:55px;max-width:160px;">
+                        <img src="<?= htmlspecialchars($header['ttd_manajemen']) ?>" style="max-height:50px;max-width:140px;">
                     <?php else: ?>
-                        <div style="height:55px;"></div>
+                        <div style="height:50px;"></div>
                     <?php endif; ?>
                 </div>
                 <div class="ttd-name"><?= htmlspecialchars(!empty($header['nama_pejabat_manajemen']) ? $header['nama_pejabat_manajemen'] : '...........................................') ?></div>
-                <div class="ttd-jabatan"><?= htmlspecialchars(!empty($header['jabatan_manajemen']) ? $header['jabatan_manajemen'] : 'Manager / Atasan') ?></div>
-                <div class="ttd-jabatan" style="margin-top:2px;">Tanggal: <?= !empty($header['tanggal_approval']) ? date('d/m/Y', strtotime($header['tanggal_approval'])) : date('d/m/Y', strtotime($header['tanggal_inspeksi'])) ?></div>
+                <div class="ttd-jabatan"><?= htmlspecialchars(!empty($header['jabatan_manajemen']) ? $header['jabatan_manajemen'] : 'Team Leader / Pengawas K3') ?></div>
+                <div class="ttd-jabatan" style="margin-top:2px;">Tgl: <?= !empty($header['tanggal_approval']) ? date('d/m/Y', strtotime($header['tanggal_approval'])) : date('d/m/Y', strtotime($header['tanggal_inspeksi'])) ?></div>
+            </div>
+
+            <!-- 3. Manager Unit / ULP -->
+            <div class="ttd-box">
+                <div class="ttd-title">Mengetahui & Mengesahkan :<br><span style="font-weight:normal;font-size:7.5pt;">Manager ULP / Unit</span></div>
+                <div class="ttd-canvas">
+                    <?php if (!empty($header['ttd_manager'])): ?>
+                        <img src="<?= htmlspecialchars($header['ttd_manager']) ?>" style="max-height:50px;max-width:140px;">
+                    <?php else: ?>
+                        <div style="height:50px;display:flex;align-items:flex-end;justify-content:center;color:#999;font-size:7.5pt;font-style:italic;">
+                            ( Tanda Tangan Basah )
+                        </div>
+                    <?php endif; ?>
+                </div>
+                <div class="ttd-name"><?= htmlspecialchars(!empty($header['nama_manager']) ? $header['nama_manager'] : (!empty($header['nama_pejabat_manajemen']) ? $header['nama_pejabat_manajemen'] : '...........................................')) ?></div>
+                <div class="ttd-jabatan"><?= htmlspecialchars(!empty($header['jabatan_manager']) ? $header['jabatan_manager'] : 'Manager ULP') ?></div>
+                <div class="ttd-jabatan" style="margin-top:2px;">Tgl: <?= !empty($header['tanggal_manager']) ? date('d/m/Y', strtotime($header['tanggal_manager'])) : (!empty($header['tanggal_approval']) ? date('d/m/Y', strtotime($header['tanggal_approval'])) : date('d/m/Y', strtotime($header['tanggal_inspeksi']))) ?></div>
             </div>
         </div>
     </div>

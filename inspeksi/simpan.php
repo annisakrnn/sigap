@@ -90,11 +90,17 @@ try {
     $raw_ttd = trim(isset($_POST['ttd_petugas']) ? $_POST['ttd_petugas'] : '');
     $ttd_petugas = (!empty($raw_ttd) && strlen($raw_ttd) >= 100) ? $raw_ttd : (isset($existing_header['ttd_petugas']) ? $existing_header['ttd_petugas'] : null);
 
-    // Data Manager (Opsional - Bisa diisi digital atau offline)
-    $raw_ttd_mgr = trim(isset($_POST['ttd_manajemen']) ? $_POST['ttd_manajemen'] : '');
-    $ttd_manajemen = (!empty($raw_ttd_mgr) && strlen($raw_ttd_mgr) >= 100) ? $raw_ttd_mgr : (isset($existing_header['ttd_manajemen']) ? $existing_header['ttd_manajemen'] : null);
+    // Data TL / Manajemen (Pihak 2)
+    $raw_ttd_tl = trim(isset($_POST['ttd_manajemen']) ? $_POST['ttd_manajemen'] : '');
+    $ttd_manajemen = (!empty($raw_ttd_tl) && strlen($raw_ttd_tl) >= 100) ? $raw_ttd_tl : (isset($existing_header['ttd_manajemen']) ? $existing_header['ttd_manajemen'] : null);
     $nama_pejabat_manajemen = trim(isset($_POST['nama_pejabat_manajemen']) ? $_POST['nama_pejabat_manajemen'] : (isset($existing_header['nama_pejabat_manajemen']) ? $existing_header['nama_pejabat_manajemen'] : '')) ?: null;
     $jabatan_manajemen = trim(isset($_POST['jabatan_manajemen']) ? $_POST['jabatan_manajemen'] : (isset($existing_header['jabatan_manajemen']) ? $existing_header['jabatan_manajemen'] : '')) ?: null;
+
+    // Data Manager (Pihak 3 - Opsional / TTD Offline)
+    $raw_ttd_mgr = trim(isset($_POST['ttd_manager']) ? $_POST['ttd_manager'] : '');
+    $ttd_manager = (!empty($raw_ttd_mgr) && strlen($raw_ttd_mgr) >= 100) ? $raw_ttd_mgr : (isset($existing_header['ttd_manager']) ? $existing_header['ttd_manager'] : null);
+    $nama_manager = trim(isset($_POST['nama_manager']) ? $_POST['nama_manager'] : (isset($existing_header['nama_manager']) ? $existing_header['nama_manager'] : '')) ?: null;
+    $jabatan_manager = trim(isset($_POST['jabatan_manager']) ? $_POST['jabatan_manager'] : (isset($existing_header['jabatan_manager']) ? $existing_header['jabatan_manager'] : '')) ?: null;
 
     if ($edit_id > 0) {
         $header_id = $edit_id;
@@ -118,9 +124,12 @@ try {
                 foto_kegiatan          = :foto,
                 status                 = :status,
                 ttd_petugas            = :ttd,
-                ttd_manajemen          = :ttd_mgr,
-                nama_pejabat_manajemen = :nama_mgr,
-                jabatan_manajemen      = :jab_mgr,
+                ttd_manajemen          = :ttd_tl,
+                nama_pejabat_manajemen = :nama_tl,
+                jabatan_manajemen      = :jab_tl,
+                nama_manager           = :nama_mgr,
+                jabatan_manager        = :jab_mgr,
+                ttd_manager            = :ttd_mgr,
                 updated_at             = NOW()
             WHERE id = :id
         ");
@@ -138,9 +147,12 @@ try {
             ':foto'        => $foto_kegiatan_path,
             ':status'      => $status,
             ':ttd'         => $ttd_petugas,
-            ':ttd_mgr'     => $ttd_manajemen,
-            ':nama_mgr'    => $nama_pejabat_manajemen,
-            ':jab_mgr'     => $jabatan_manajemen,
+            ':ttd_tl'      => $ttd_manajemen,
+            ':nama_tl'     => $nama_pejabat_manajemen,
+            ':jab_tl'      => $jabatan_manajemen,
+            ':nama_mgr'    => $nama_manager,
+            ':jab_mgr'     => $jabatan_manager,
+            ':ttd_mgr'     => $ttd_manager,
             ':id'          => $header_id
         ]);
 
@@ -155,11 +167,13 @@ try {
             INSERT INTO gelar_alat_header 
                 (nomor_dokumen, tanggal_inspeksi, bulan_tahun, jenis_pekerjaan, regu_id, 
                  nama_pelaksana_1, jabatan_petugas, nama_pelaksana_2, pendamping_admin, catatan_umum, 
-                 foto_kegiatan, status, ttd_petugas, ttd_manajemen, nama_pejabat_manajemen, jabatan_manajemen, petugas_id)
+                 foto_kegiatan, status, ttd_petugas, ttd_manajemen, nama_pejabat_manajemen, jabatan_manajemen,
+                 nama_manager, jabatan_manager, ttd_manager, petugas_id)
             VALUES 
                 (:nomor_dok, :tanggal, :bulan_tahun, :jenis, :regu_id,
                  :nama1, :jabatan, :nama2, :pendamping, :catatan,
-                 :foto, :status, :ttd, :ttd_mgr, :nama_mgr, :jab_mgr, :petugas_id)
+                 :foto, :status, :ttd, :ttd_tl, :nama_tl, :jab_tl,
+                 :nama_mgr, :jab_mgr, :ttd_mgr, :petugas_id)
         ");
         $stmt_header->execute([
             ':nomor_dok'   => $nomor_dok,
@@ -175,9 +189,12 @@ try {
             ':foto'        => $foto_kegiatan_path,
             ':status'      => $status,
             ':ttd'         => $ttd_petugas,
-            ':ttd_mgr'     => $ttd_manajemen,
-            ':nama_mgr'    => $nama_pejabat_manajemen,
-            ':jab_mgr'     => $jabatan_manajemen,
+            ':ttd_tl'      => $ttd_manajemen,
+            ':nama_tl'     => $nama_pejabat_manajemen,
+            ':jab_tl'      => $jabatan_manajemen,
+            ':nama_mgr'    => $nama_manager,
+            ':jab_mgr'     => $jabatan_manager,
+            ':ttd_mgr'     => $ttd_manager,
             ':petugas_id'  => $petugas_id
         ]);
         $header_id = $pdo->lastInsertId();

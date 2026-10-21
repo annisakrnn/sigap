@@ -51,16 +51,21 @@ if ($action === 'approve') {
         $nomor_dokumen = 'GA/' . strtoupper($doc['jenis_pekerjaan']) . '/' . date('Ym') . '/' . str_pad($gelar_alat_id, 4, '0', STR_PAD_LEFT);
     }
 
+    $nama_mgr = trim(isset($_POST['nama_manager']) ? $_POST['nama_manager'] : '');
+    $jabatan_mgr = trim(isset($_POST['jabatan_manager']) ? $_POST['jabatan_manager'] : '');
+
     $stmt_update = $pdo->prepare("
         UPDATE gelar_alat_header SET
-            nomor_dokumen = :no_dok,
-            status = 'approved',
-            ttd_manajemen = :ttd,
-            manajemen_id = :mid,
+            nomor_dokumen          = :no_dok,
+            status                 = 'approved',
+            ttd_manajemen          = :ttd,
+            manajemen_id           = :mid,
             nama_pejabat_manajemen = :nama_pejabat,
-            jabatan_manajemen = :jabatan,
-            catatan_manajemen = :catatan,
-            tanggal_approval = NOW()
+            jabatan_manajemen      = :jabatan,
+            nama_manager           = COALESCE(NULLIF(:nama_mgr, ''), nama_manager, 'Manager ULP'),
+            jabatan_manager        = COALESCE(NULLIF(:jabatan_mgr, ''), jabatan_manager, 'Manager ULP'),
+            catatan_manajemen      = :catatan,
+            tanggal_approval       = NOW()
         WHERE id = :id
     ");
     $stmt_update->execute([
@@ -69,6 +74,8 @@ if ($action === 'approve') {
         ':mid'          => $user['id'],
         ':nama_pejabat' => $nama_pejabat,
         ':jabatan'      => $jabatan_pejabat,
+        ':nama_mgr'     => $nama_mgr,
+        ':jabatan_mgr'  => $jabatan_mgr,
         ':catatan'      => $catatan,
         ':id'           => $gelar_alat_id
     ]);

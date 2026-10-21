@@ -272,16 +272,34 @@ require_once __DIR__ . '/../includes/header.php';
         <input type="hidden" name="gelar_alat_id" value="<?= $id ?>">
         <input type="hidden" name="action" id="actionField" value="">
 
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:12px 14px; margin-bottom:1rem; font-size:0.85rem; color:#166534;">
+            <strong><i class="fa-solid fa-circle-info"></i> Alur Pengesahan:</strong> 
+            Anda menandatangani sebagai <strong>Pihak 2 (Team Leader / Manajemen Verifikator)</strong>. Setelah disetujui, Berita Acara dapat langsung dicetak untuk dimintakan tanda tangan fisik/offline ke <strong>Manager ULP (Pihak 3)</strong>.
+        </div>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Nama Pejabat Penandatangan <span style="color:var(--danger);">*</span></label>
+                <label class="form-label">Nama Team Leader / Verifikator <span style="color:var(--danger);">*</span></label>
                 <input type="text" name="nama_pejabat" id="namaPejabat" class="form-control" 
                     value="<?= htmlspecialchars($user['nama_lengkap']) ?>" required>
             </div>
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Jabatan Penandatangan <span style="color:var(--danger);">*</span></label>
+                <label class="form-label">Jabatan Team Leader / Verifikator <span style="color:var(--danger);">*</span></label>
                 <input type="text" name="jabatan_pejabat" id="jabatanPejabat" class="form-control"
                     value="<?= htmlspecialchars($user['jabatan']) ?>" required>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;background:#f8fafc;padding:12px;border-radius:6px;border:1px solid var(--border-color);">
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" style="font-size:0.8rem;">Nama Manager ULP / Unit <span style="color:var(--text-muted);font-weight:normal;">(Untuk Kolom Cetak Pihak 3)</span></label>
+                <input type="text" name="nama_manager" class="form-control" style="font-size:0.875rem;"
+                    value="<?= htmlspecialchars(!empty($header['nama_manager']) ? $header['nama_manager'] : 'Manager ULP') ?>">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" style="font-size:0.8rem;">Jabatan Manager <span style="color:var(--text-muted);font-weight:normal;">(Untuk Kolom Cetak Pihak 3)</span></label>
+                <input type="text" name="jabatan_manager" class="form-control" style="font-size:0.875rem;"
+                    value="<?= htmlspecialchars(!empty($header['jabatan_manager']) ? $header['jabatan_manager'] : 'Manager ULP') ?>">
             </div>
         </div>
 
