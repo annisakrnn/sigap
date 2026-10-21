@@ -156,3 +156,83 @@ function secure_upload_image($file_array, $subfolder, $prefix = 'img') {
         'error'    => null
     ];
 }
+
+/**
+ * Validasi gambar upload dan kembalikan binary data + mime type
+ * untuk disimpan langsung ke kolom MEDIUMBLOB MySQL.
+ * Tidak ada file yang ditulis ke disk server.
+ *
+ * @param array $file_array Elemen dari $_FILES (misal: $_FILES['foto_item_1'])
+ * @return array ['success' => bool, 'data' => string|null, 'mime' => string|null, 'error' => string|null]
+ */
+function secure_read_image_for_db($file_array) {
+    if (!isset($file_array) || !is_array($file_array) || empty($file_array['name'])) {
+        return ['success' => false, 'data' => null, 'mime' => null, 'error' => 'Tidak ada file yang diunggah.'];
+    }
+
+    if ($file_array['error'] !== UPLOAD_ERR_OK) {
+        $err_messages = [
+            UPLOAD_ERR_INI_SIZE   => 'Ukuran file melebihi batas upload server (upload_max_filesize).',
+            UPLOAD_ERR_FORM_SIZE  => 'Ukuran file melebihi batas formulir.',
+            UPLOAD_ERR_PARTIAL    => 'File hanya terunggah sebagian. Silakan ulangi.',
+            UPLOAD_ERR_NO_FILE    => 'Tidak ada file yang dipilih.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Folder temporary server tidak ditemukan.',
+            UPLOAD_ERR_CANT_WRITE => 'Gagal menulis file ke disk server.',
+            UPLOAD_ERR_EXTENSION  => 'Unggahan dihentikan oleh ekstensi PHP.',
+        ];
+        return ['success' => false, 'data' => null, 'mime' => null, 'error' => isset($err_messages[$file_array['error']]) ? $err_messages[$file_array['error']] : 'Error upload tidak diketahui.'];
+    }
+
+    // 1. Cek ukuran
+    if ($file_array['size'] > MAX_UPLOAD_SIZE_BYTES) {
+        return ['success' => false, 'data' => null, 'mime' => null, 'error' => 'Ukuran file terlalu besar (maksimal 15MB).'];
+    }
+
+    // 2. Cek ekstensi whitelist
+    $ext = strtolower(pathinfo($file_array['name'], PATHINFO_EXTENSION));
+    if (!in_array($ext, ALLOWED_IMAGE_EXTENSIONS, true)) {
+        return ['success' => false, 'data' => null, 'mime' => null, 'error' => 'Format file tidak diizinkan. Hanya JPG, PNG, dan WEBP yang diperbolehkan.'];
+    }
+
+    // 3. Cek file adalah uploaded file yang sah
+    $tmp_path = $file_array['tmp_name'];
+    if (!is_uploaded_file($tmp_path)) {
+        return ['success' => false, 'data' => null, 'mime' => null, 'error' => 'File tidak valid (bukan uploaded file).'];
+    }
+
+    // 4. Cek MIME Type via Fileinfo
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime  = finfo_file($finfo, $tmp_path);
+    finfo_close($finfo);
+
+    if (!in_array($mime, ALLOWED_IMAGE_MIMES, true)) {
+        return ['success' => false, 'data' => null, 'mime' => null, 'error' => 'Tipe konten file tidak valid (' . htmlspecialchars($mime) . '). File harus berupa gambar asli.'];
+    }
+
+    // 5. Verifikasi gambar valid
+    $img_info = @getimagesize($tmp_path);
+    if ($img_info === false) {
+        return ['success' => false, 'data' => null, 'mime' => null, 'error' => 'File gambar rusak atau tidak dapat dibaca.'];
+    }
+
+    // 6. Baca binary data
+    $binary = file_get_contents($tmp_path);
+    if ($binary === false) {
+        return ['success' => false, 'data' => null, 'mime' => null, 'error' => 'Gagal membaca isi file gambar.'];
+    }
+
+    // Normalisasi mime jpeg
+    if ($mime === 'image/pjpeg') {
+        $mime = 'image/jpeg';
+    }
+    if ($mime === 'image/x-png') {
+        $mime = 'image/png';
+    }
+
+    return [
+        'success' => true,
+        'data'    => $binary,
+        'mime'    => $mime,
+        'error'   => null,
+    ];
+}

@@ -170,10 +170,10 @@ try {
     $stmt_detail = $pdo->prepare("
         INSERT INTO gelar_alat_detail 
             (gelar_alat_id, master_barang_id, nama_barang_snapshot, kategori_snapshot,
-             jumlah_standar, jumlah_realisasi, satuan, kondisi, keterangan, foto_temuan)
+             jumlah_standar, jumlah_realisasi, satuan, kondisi, keterangan, foto_temuan, foto_temuan_mime)
         VALUES 
             (:header_id, :barang_id, :nama_snapshot, :kategori_snapshot,
-             :std, :realisasi, :satuan, :kondisi, :ket, :foto)
+             :std, :realisasi, :satuan, :kondisi, :ket, :foto, :foto_mime)
     ");
 
     // Ambil nama barang dari DB untuk snapshot
@@ -187,32 +187,50 @@ try {
         $barang = $stmt_nama->fetch();
         if (!$barang) continue;
 
-        // Foto temuan item (gunakan yang sudah ada jika tidak upload baru)
-        $foto_temuan_path = !empty($item_data['existing_foto']) ? $item_data['existing_foto'] : null;
+        // Foto temuan item — simpan binary langsung ke MySQL (MEDIUMBLOB)
+        $foto_temuan_blob = null;
+        $foto_temuan_mime = null;
+
+        // Jika ada foto baru di-upload, baca sebagai binary
         $foto_key_1 = 'foto_item_' . $item_tpl_id;
         $foto_key_2 = 'foto_item_m_' . $item_tpl_id;
         $foto_src_key = isset($_FILES[$foto_key_1]) && !empty($_FILES[$foto_key_1]['tmp_name']) ? $foto_key_1 :
                        (isset($_FILES[$foto_key_2]) && !empty($_FILES[$foto_key_2]['tmp_name']) ? $foto_key_2 : null);
 
         if ($foto_src_key && !empty($_FILES[$foto_src_key]['name'])) {
-            $up_temuan = secure_upload_image($_FILES[$foto_src_key], 'foto_temuan', 'temuan_' . $header_id . '_' . $barang_id);
+            $up_temuan = secure_read_image_for_db($_FILES[$foto_src_key]);
             if ($up_temuan['success']) {
-                $foto_temuan_path = $up_temuan['filename'];
+                $foto_temuan_blob = $up_temuan['data'];
+                $foto_temuan_mime = $up_temuan['mime'];
+            }
+            // Jika gagal baca blob, biarkan null (tidak throw exception agar item tetap tersimpan)
+        } elseif (!empty($item_data['existing_foto_id'])) {
+            // Jika ada foto lama (edit mode) — ambil blob dari DB berdasarkan detail_id lama
+            $old_id = intval($item_data['existing_foto_id']);
+            if ($old_id > 0) {
+                $stmt_old = $pdo->prepare("SELECT foto_temuan, foto_temuan_mime FROM gelar_alat_detail WHERE id = :id LIMIT 1");
+                $stmt_old->execute([':id' => $old_id]);
+                $old_row = $stmt_old->fetch(PDO::FETCH_ASSOC);
+                if ($old_row && !empty($old_row['foto_temuan'])) {
+                    $foto_temuan_blob = $old_row['foto_temuan'];
+                    $foto_temuan_mime = $old_row['foto_temuan_mime'];
+                }
             }
         }
 
         $kondisi_val = isset($item_data['kondisi']) ? $item_data['kondisi'] : '';
         $stmt_detail->execute([
-            ':header_id'        => $header_id,
-            ':barang_id'        => $barang_id,
-            ':nama_snapshot'    => $barang['nama_barang'],
-            ':kategori_snapshot'=> isset($item_data['kategori']) ? $item_data['kategori'] : $barang['kategori'],
-            ':std'              => intval(isset($item_data['jumlah_standar']) ? $item_data['jumlah_standar'] : 1),
-            ':realisasi'        => intval(isset($item_data['realisasi']) ? $item_data['realisasi'] : 0),
-            ':satuan'           => isset($item_data['satuan']) ? $item_data['satuan'] : '-',
-            ':kondisi'          => in_array($kondisi_val, ['baik','rusak','waktu_ganti','hilang','ada','tidak_ada']) ? $kondisi_val : 'baik',
-            ':ket'              => trim(isset($item_data['keterangan']) ? $item_data['keterangan'] : '') ?: null,
-            ':foto'             => $foto_temuan_path
+            ':header_id'         => $header_id,
+            ':barang_id'         => $barang_id,
+            ':nama_snapshot'     => $barang['nama_barang'],
+            ':kategori_snapshot' => isset($item_data['kategori']) ? $item_data['kategori'] : $barang['kategori'],
+            ':std'               => intval(isset($item_data['jumlah_standar']) ? $item_data['jumlah_standar'] : 1),
+            ':realisasi'         => intval(isset($item_data['realisasi']) ? $item_data['realisasi'] : 0),
+            ':satuan'            => isset($item_data['satuan']) ? $item_data['satuan'] : '-',
+            ':kondisi'           => in_array($kondisi_val, ['baik','rusak','waktu_ganti','hilang','ada','tidak_ada']) ? $kondisi_val : 'baik',
+            ':ket'               => trim(isset($item_data['keterangan']) ? $item_data['keterangan'] : '') ?: null,
+            ':foto'              => $foto_temuan_blob,
+            ':foto_mime'         => $foto_temuan_mime,
         ]);
     }
 

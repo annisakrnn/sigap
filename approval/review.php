@@ -239,8 +239,8 @@ require_once __DIR__ . '/../includes/header.php';
                                 <td style="font-size:0.8rem;color:var(--text-muted);"><?= htmlspecialchars(isset($d['keterangan']) ? $d['keterangan'] : '-') ?></td>
                                 <td>
                                     <?php if (!empty($d['foto_temuan'])): ?>
-                                        <a href="<?= base_url('uploads/foto_temuan/' . htmlspecialchars($d['foto_temuan'])) ?>" target="_blank" onclick="event.preventDefault(); previewFoto('<?= base_url('uploads/foto_temuan/' . htmlspecialchars($d['foto_temuan'])) ?>', 'Temuan: <?= addslashes(htmlspecialchars($d['nama_barang_snapshot'])) ?>');">
-                                            <img src="<?= base_url('uploads/foto_temuan/' . htmlspecialchars($d['foto_temuan'])) ?>"
+                                        <a href="<?= base_url('foto/temuan.php?id=' . intval($d['id'])) ?>" target="_blank" onclick="event.preventDefault(); previewFoto('<?= base_url('foto/temuan.php?id=' . intval($d['id'])) ?>', 'Temuan: <?= addslashes(htmlspecialchars($d['nama_barang_snapshot'])) ?>');">
+                                            <img src="<?= base_url('foto/temuan.php?id=' . intval($d['id'])) ?>"
                                                 style="width:44px;height:44px;object-fit:cover;border-radius:4px;border:2px solid #ef4444;cursor:pointer;" title="Klik untuk memperbesar">
                                         </a>
                                     <?php else: ?>

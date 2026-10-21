@@ -248,7 +248,7 @@ require_once __DIR__ . '/../includes/header.php';
                          style="background:<?= $rf['sudah_diperbaiki'] ? '#f0fdf4' : ($rf['kondisi'] === 'rusak' ? '#fef2f2' : '#fffbeb') ?>; border:1px solid <?= $rf['sudah_diperbaiki'] ? '#bbf7d0' : ($rf['kondisi'] === 'rusak' ? '#fecaca' : '#fde68a') ?>;">
                         <!-- Icon/Foto -->
                         <?php if (!empty($rf['foto_temuan'])): ?>
-                            <img src="<?= base_url('uploads/foto_temuan/' . htmlspecialchars($rf['foto_temuan'])) ?>" 
+                            <img src="<?= base_url('foto/temuan.php?id=' . intval($rf['detail_id'])) ?>" 
                                  style="width:42px; height:42px; object-fit:cover; border-radius:var(--radius-sm); border:1px solid rgba(0,0,0,0.1); flex-shrink:0;">
                         <?php else: ?>
                             <div style="width:42px; height:42px; border-radius:var(--radius-sm); background:<?= $rf['sudah_diperbaiki'] ? '#dcfce7' : ($rf['kondisi'] === 'rusak' ? '#fee2e2' : '#fef3c7') ?>; display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0; color:<?= $rf['sudah_diperbaiki'] ? '#15803d' : ($rf['kondisi'] === 'rusak' ? '#b91c1c' : '#b45309') ?>;">

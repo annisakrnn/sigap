@@ -229,8 +229,8 @@ require_once __DIR__ . '/../includes/header.php';
                                 <td style="color:var(--text-muted);font-size:0.8rem;"><?= htmlspecialchars($ket) ?></td>
                                 <td>
                                     <?php if (!empty($d['foto_temuan'])): ?>
-                                        <a href="<?= base_url('uploads/foto_temuan/' . htmlspecialchars($d['foto_temuan'])) ?>" target="_blank">
-                                            <img src="<?= base_url('uploads/foto_temuan/' . htmlspecialchars($d['foto_temuan'])) ?>"
+                                        <a href="<?= base_url('foto/temuan.php?id=' . intval($d['id'])) ?>" target="_blank">
+                                            <img src="<?= base_url('foto/temuan.php?id=' . intval($d['id'])) ?>"
                                                 style="width:40px;height:40px;object-fit:cover;border-radius:4px;border:2px solid #ef4444;" title="Lihat Foto Temuan">
                                         </a>
                                     <?php else: ?>
