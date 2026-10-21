@@ -489,6 +489,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <i class="fa-solid fa-signature" style="color:var(--navy);margin-right:6px;"></i> C. Tanda Tangan Digital Petugas Pemeriksa
             </h2>
         </div>
+
         <?php if (!empty($edit_header['ttd_petugas'])): ?>
             <div style="margin-bottom:12px; padding:10px 14px; background:#f8fafc; border-radius:6px; border:1px solid var(--border-color); display:flex; align-items:center; gap:14px;">
                 <img src="<?= htmlspecialchars($edit_header['ttd_petugas']) ?>" style="max-height:48px; border:1px solid #cbd5e1; border-radius:4px; background:#fff; padding:2px;">
@@ -502,6 +503,7 @@ require_once __DIR__ . '/../includes/header.php';
                 Tanda tangani pada bidang di bawah ini menggunakan jari atau stylus Anda sebagai pernyataan bahwa pemeriksaan telah dilakukan.
             </p>
         <?php endif; ?>
+
         <div class="signature-wrapper">
             <canvas class="signature-canvas" id="canvasPetugas"></canvas>
         </div>
@@ -511,9 +513,46 @@ require_once __DIR__ . '/../includes/header.php';
             </button>
         </div>
         <input type="hidden" name="ttd_petugas" id="ttdPetugas">
-        <p style="font-size:0.8rem;color:var(--text-muted);margin-top:8px;">
-            Petugas Pemeriksa: <strong><?= htmlspecialchars($user['nama_lengkap']) ?></strong> — <?= htmlspecialchars($user['jabatan']) ?>
-        </p>
+
+        <!-- Form Input Nama Petugas & Nama Jabatan -->
+        <div style="margin-top:1rem; padding-top:1rem; border-top:1px dashed var(--border-color); display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:14px;">
+            <div>
+                <label for="nama_petugas_ttd" style="display:block;font-size:0.825rem;font-weight:600;color:var(--text-main);margin-bottom:6px;">
+                    <i class="fa-solid fa-user-check" style="margin-right:6px;color:var(--navy);"></i> Nama Petugas Pemeriksa <span style="color:var(--danger);font-weight:bold;">*</span>
+                </label>
+                <input type="text"
+                       id="nama_petugas_ttd"
+                       name="nama_pelaksana_1"
+                       class="form-control"
+                       placeholder="Masukkan nama lengkap petugas pemeriksa"
+                       value="<?= htmlspecialchars(
+                           isset($edit_header['nama_pelaksana_1']) && !empty($edit_header['nama_pelaksana_1'])
+                               ? $edit_header['nama_pelaksana_1']
+                               : ($user ? $user['nama_lengkap'] : '')
+                       ) ?>"
+                       style="font-size:0.9rem;"
+                       required>
+                <small style="color:var(--text-muted);font-size:0.75rem;display:block;margin-top:4px;">Nama yang akan tercantum pada berita acara pemeriksaan.</small>
+            </div>
+            <div>
+                <label for="jabatan_petugas_ttd" style="display:block;font-size:0.825rem;font-weight:600;color:var(--text-main);margin-bottom:6px;">
+                    <i class="fa-solid fa-id-badge" style="margin-right:6px;color:var(--navy);"></i> Nama Jabatan / Posisi <span style="color:var(--danger);font-weight:bold;">*</span>
+                </label>
+                <input type="text"
+                       id="jabatan_petugas_ttd"
+                       name="jabatan_petugas"
+                       class="form-control"
+                       placeholder="Contoh: Petugas Lapangan / Pengawas K3"
+                       value="<?= htmlspecialchars(
+                           isset($edit_header['jabatan_petugas']) && !empty($edit_header['jabatan_petugas'])
+                               ? $edit_header['jabatan_petugas']
+                               : ($user ? $user['jabatan'] : '')
+                       ) ?>"
+                       style="font-size:0.9rem;"
+                       required>
+                <small style="color:var(--text-muted);font-size:0.75rem;display:block;margin-top:4px;">Jabatan resmi petugas pemeriksa saat gelar alat.</small>
+            </div>
+        </div>
     </div>
 
     <!-- ===== SECTION 6: Catatan Umum ===== -->

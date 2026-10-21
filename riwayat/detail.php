@@ -13,7 +13,9 @@ $id = intval(isset($_GET['id']) ? $_GET['id'] : 0);
 
 $stmt_h = $pdo->prepare("
     SELECT h.*, r.nama_regu, r.nopol, r.kendaraan,
-           u.nama_lengkap AS nama_petugas, u.jabatan AS jabatan_petugas
+           u.nama_lengkap AS nama_petugas_user,
+           COALESCE(NULLIF(h.jabatan_petugas,''), u.jabatan) AS jabatan_petugas,
+           COALESCE(NULLIF(h.nama_pelaksana_1,''), u.nama_lengkap) AS nama_petugas
     FROM gelar_alat_header h
     JOIN regu r ON h.regu_id = r.id
     JOIN users u ON h.petugas_id = u.id

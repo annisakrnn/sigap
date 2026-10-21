@@ -20,7 +20,9 @@ if (!$id) {
 // Ambil header dokumen
 $stmt_h = $pdo->prepare("
     SELECT h.*, r.nama_regu, r.nopol, r.kendaraan, r.jenis_pekerjaan AS regu_jenis,
-           u.nama_lengkap AS nama_petugas, u.jabatan AS jabatan_petugas, u.no_hp AS hp_petugas
+           u.nama_lengkap AS nama_petugas_user, u.no_hp AS hp_petugas,
+           COALESCE(NULLIF(h.jabatan_petugas,''), u.jabatan) AS jabatan_petugas,
+           COALESCE(NULLIF(h.nama_pelaksana_1,''), u.nama_lengkap) AS nama_petugas
     FROM gelar_alat_header h
     JOIN regu r ON h.regu_id = r.id
     JOIN users u ON h.petugas_id = u.id

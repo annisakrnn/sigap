@@ -103,6 +103,7 @@ CREATE TABLE IF NOT EXISTS gelar_alat_header (
     jenis_pekerjaan        ENUM('p2tl', 'sr_app', 'yandal', 'har') NOT NULL,
     regu_id                INT           NOT NULL,
     nama_pelaksana_1       VARCHAR(100)  NOT NULL,
+    jabatan_petugas        VARCHAR(100)  NULL,
     nama_pelaksana_2       VARCHAR(100)  NULL,
     pendamping_admin       VARCHAR(100)  NULL,
     catatan_umum           TEXT          NULL,

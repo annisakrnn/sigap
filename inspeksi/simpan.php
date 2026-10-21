@@ -105,6 +105,7 @@ try {
                 jenis_pekerjaan  = :jenis,
                 regu_id          = :regu_id,
                 nama_pelaksana_1 = :nama1,
+                jabatan_petugas  = :jabatan,
                 nama_pelaksana_2 = :nama2,
                 pendamping_admin = :pendamping,
                 catatan_umum     = :catatan,
@@ -121,6 +122,7 @@ try {
             ':jenis'       => $jenis_pekerjaan,
             ':regu_id'     => $regu_id,
             ':nama1'       => trim(isset($_POST['nama_pelaksana_1']) ? $_POST['nama_pelaksana_1'] : ($user ? $user['nama_lengkap'] : 'Petugas Lapangan')),
+            ':jabatan'     => trim(isset($_POST['jabatan_petugas']) ? $_POST['jabatan_petugas'] : ($user ? $user['jabatan'] : '')) ?: null,
             ':nama2'       => trim(isset($_POST['nama_pelaksana_2']) ? $_POST['nama_pelaksana_2'] : '') ?: null,
             ':pendamping'  => trim(isset($_POST['pendamping_admin']) ? $_POST['pendamping_admin'] : '') ?: null,
             ':catatan'     => trim(isset($_POST['catatan_umum']) ? $_POST['catatan_umum'] : '') ?: null,
@@ -140,11 +142,11 @@ try {
         $stmt_header = $pdo->prepare("
             INSERT INTO gelar_alat_header 
                 (nomor_dokumen, tanggal_inspeksi, bulan_tahun, jenis_pekerjaan, regu_id, 
-                 nama_pelaksana_1, nama_pelaksana_2, pendamping_admin, catatan_umum, 
+                 nama_pelaksana_1, jabatan_petugas, nama_pelaksana_2, pendamping_admin, catatan_umum, 
                  foto_kegiatan, status, ttd_petugas, petugas_id)
             VALUES 
                 (:nomor_dok, :tanggal, :bulan_tahun, :jenis, :regu_id,
-                 :nama1, :nama2, :pendamping, :catatan,
+                 :nama1, :jabatan, :nama2, :pendamping, :catatan,
                  :foto, :status, :ttd, :petugas_id)
         ");
         $stmt_header->execute([
@@ -154,6 +156,7 @@ try {
             ':jenis'       => $jenis_pekerjaan,
             ':regu_id'     => $regu_id,
             ':nama1'       => trim(isset($_POST['nama_pelaksana_1']) ? $_POST['nama_pelaksana_1'] : ($user ? $user['nama_lengkap'] : 'Petugas Lapangan')),
+            ':jabatan'     => trim(isset($_POST['jabatan_petugas']) ? $_POST['jabatan_petugas'] : ($user ? $user['jabatan'] : '')) ?: null,
             ':nama2'       => trim(isset($_POST['nama_pelaksana_2']) ? $_POST['nama_pelaksana_2'] : '') ?: null,
             ':pendamping'  => trim(isset($_POST['pendamping_admin']) ? $_POST['pendamping_admin'] : '') ?: null,
             ':catatan'     => trim(isset($_POST['catatan_umum']) ? $_POST['catatan_umum'] : '') ?: null,
