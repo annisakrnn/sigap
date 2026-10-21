@@ -97,6 +97,10 @@ require_once __DIR__ . '/../includes/header.php';
             <a href="<?= base_url('cetak/berita_acara.php?id=' . $id) ?>" target="_blank" class="btn btn-success">
                 <i class="fa-solid fa-print"></i> Cetak Berita Acara Resmi (PDF)
             </a>
+        <?php elseif ($header['status'] === 'submitted'): ?>
+            <a href="<?= base_url('cetak/berita_acara.php?id=' . $id) ?>" target="_blank" class="btn btn-outline" style="background:#fff;" title="Cetak dokumen fisik untuk dimintakan pengesahan / tanda tangan basah secara offline">
+                <i class="fa-solid fa-print"></i> Cetak Dokumen (Untuk TTD Offline)
+            </a>
         <?php endif; ?>
     </div>
 </div>

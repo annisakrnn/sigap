@@ -20,13 +20,13 @@ $stmt_h = $pdo->prepare("
     FROM gelar_alat_header h
     JOIN regu r ON h.regu_id = r.id
     JOIN users u ON h.petugas_id = u.id
-    WHERE h.id = :id AND h.status = 'approved' LIMIT 1
+    WHERE h.id = :id AND (h.status = 'approved' OR h.status = 'submitted') LIMIT 1
 ");
 $stmt_h->execute([':id' => $id]);
 $header = $stmt_h->fetch();
 
 if (!$header) {
-    exit("Dokumen tidak ditemukan atau belum berstatus APPROVED.");
+    exit("Dokumen tidak ditemukan atau status belum SUBMITTED / APPROVED.");
 }
 
 $stmt_d = $pdo->prepare("SELECT * FROM gelar_alat_detail WHERE gelar_alat_id = :id ORDER BY kategori_snapshot, id");
@@ -279,9 +279,9 @@ $kondisi_label_print = [
                         <div style="height:55px;"></div>
                     <?php endif; ?>
                 </div>
-                <div class="ttd-name"><?= htmlspecialchars(isset($header['nama_pejabat_manajemen']) ? $header['nama_pejabat_manajemen'] : '-') ?></div>
-                <div class="ttd-jabatan"><?= htmlspecialchars(isset($header['jabatan_manajemen']) ? $header['jabatan_manajemen'] : '-') ?></div>
-                <div class="ttd-jabatan" style="margin-top:2px;">Tanggal: <?= $header['tanggal_approval'] ? date('d/m/Y', strtotime($header['tanggal_approval'])) : '-' ?></div>
+                <div class="ttd-name"><?= htmlspecialchars(!empty($header['nama_pejabat_manajemen']) ? $header['nama_pejabat_manajemen'] : '...........................................') ?></div>
+                <div class="ttd-jabatan"><?= htmlspecialchars(!empty($header['jabatan_manajemen']) ? $header['jabatan_manajemen'] : 'Manager / Atasan') ?></div>
+                <div class="ttd-jabatan" style="margin-top:2px;">Tanggal: <?= !empty($header['tanggal_approval']) ? date('d/m/Y', strtotime($header['tanggal_approval'])) : date('d/m/Y', strtotime($header['tanggal_inspeksi'])) ?></div>
             </div>
         </div>
     </div>
