@@ -90,17 +90,25 @@ try {
     $raw_ttd = trim(isset($_POST['ttd_petugas']) ? $_POST['ttd_petugas'] : '');
     $ttd_petugas = (!empty($raw_ttd) && strlen($raw_ttd) >= 100) ? $raw_ttd : (isset($existing_header['ttd_petugas']) ? $existing_header['ttd_petugas'] : null);
 
-    // Data TL / Manajemen (Pihak 2)
-    $raw_ttd_tl = trim(isset($_POST['ttd_manajemen']) ? $_POST['ttd_manajemen'] : '');
-    $ttd_manajemen = (!empty($raw_ttd_tl) && strlen($raw_ttd_tl) >= 100) ? $raw_ttd_tl : (isset($existing_header['ttd_manajemen']) ? $existing_header['ttd_manajemen'] : null);
-    $nama_pejabat_manajemen = trim(isset($_POST['nama_pejabat_manajemen']) ? $_POST['nama_pejabat_manajemen'] : (isset($existing_header['nama_pejabat_manajemen']) ? $existing_header['nama_pejabat_manajemen'] : '')) ?: null;
-    $jabatan_manajemen = trim(isset($_POST['jabatan_manajemen']) ? $_POST['jabatan_manajemen'] : (isset($existing_header['jabatan_manajemen']) ? $existing_header['jabatan_manajemen'] : '')) ?: null;
+    // Data TL / Manajemen (Pihak 2) - Hanya dapat diisi jika login sebagai akun manajemen
+    $is_manajemen_user = ($user && $user['role'] === 'manajemen');
+    if ($is_manajemen_user) {
+        $raw_ttd_tl = trim(isset($_POST['ttd_manajemen']) ? $_POST['ttd_manajemen'] : '');
+        $ttd_manajemen = (!empty($raw_ttd_tl) && strlen($raw_ttd_tl) >= 100) ? $raw_ttd_tl : (isset($existing_header['ttd_manajemen']) ? $existing_header['ttd_manajemen'] : null);
+        $nama_pejabat_manajemen = trim(isset($_POST['nama_pejabat_manajemen']) ? $_POST['nama_pejabat_manajemen'] : ($user['nama_lengkap'] ?? '')) ?: null;
+        $jabatan_manajemen = trim(isset($_POST['jabatan_manajemen']) ? $_POST['jabatan_manajemen'] : ($user['jabatan'] ?? '')) ?: null;
+    } else {
+        // Petugas tidak dapat memanipulasi tanda tangan & nama TL
+        $ttd_manajemen = isset($existing_header['ttd_manajemen']) ? $existing_header['ttd_manajemen'] : null;
+        $nama_pejabat_manajemen = isset($existing_header['nama_pejabat_manajemen']) ? $existing_header['nama_pejabat_manajemen'] : null;
+        $jabatan_manajemen = isset($existing_header['jabatan_manajemen']) ? $existing_header['jabatan_manajemen'] : null;
+    }
 
-    // Data Manager (Pihak 3 - Opsional / TTD Offline)
+    // Data Manager (Pihak 3 - Wajib diisi saat submit, TTD Offline)
     $raw_ttd_mgr = trim(isset($_POST['ttd_manager']) ? $_POST['ttd_manager'] : '');
     $ttd_manager = (!empty($raw_ttd_mgr) && strlen($raw_ttd_mgr) >= 100) ? $raw_ttd_mgr : (isset($existing_header['ttd_manager']) ? $existing_header['ttd_manager'] : null);
-    $nama_manager = trim(isset($_POST['nama_manager']) ? $_POST['nama_manager'] : (isset($existing_header['nama_manager']) ? $existing_header['nama_manager'] : '')) ?: null;
-    $jabatan_manager = trim(isset($_POST['jabatan_manager']) ? $_POST['jabatan_manager'] : (isset($existing_header['jabatan_manager']) ? $existing_header['jabatan_manager'] : '')) ?: null;
+    $nama_manager = trim(isset($_POST['nama_manager']) ? $_POST['nama_manager'] : (isset($existing_header['nama_manager']) ? $existing_header['nama_manager'] : '')) ?: 'Manager ULP';
+    $jabatan_manager = trim(isset($_POST['jabatan_manager']) ? $_POST['jabatan_manager'] : (isset($existing_header['jabatan_manager']) ? $existing_header['jabatan_manager'] : '')) ?: 'Manager ULP';
 
     if ($edit_id > 0) {
         $header_id = $edit_id;
