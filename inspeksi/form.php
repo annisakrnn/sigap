@@ -968,6 +968,10 @@ function restoreDraftData() {
     }
 }
 
+function discardDraftData() {
+    try {
+        localStorage.removeItem(DRAFT_KEY);
+    } catch(e) {}
     document.getElementById('autosaveBanner').style.display = 'none';
 }
 
