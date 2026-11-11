@@ -110,6 +110,12 @@ try {
     $nama_manager = trim(isset($_POST['nama_manager']) ? $_POST['nama_manager'] : (isset($existing_header['nama_manager']) ? $existing_header['nama_manager'] : '')) ?: 'Manager ULP';
     $jabatan_manager = trim(isset($_POST['jabatan_manager']) ? $_POST['jabatan_manager'] : (isset($existing_header['jabatan_manager']) ? $existing_header['jabatan_manager'] : '')) ?: 'Manager ULP';
 
+    // Unit & Plat Nomor Kendaraan
+    $allowed_units = ['ULP Balong', 'ULP Pacitan', 'ULP Ponorogo', 'ULP Trenggalek', 'UP3 Ponorogo'];
+    $raw_unit = trim(isset($_POST['unit']) ? $_POST['unit'] : (isset($existing_header['unit']) ? $existing_header['unit'] : ''));
+    $unit = in_array($raw_unit, $allowed_units) ? $raw_unit : 'ULP Balong';
+    $nopol = trim(isset($_POST['nopol']) ? $_POST['nopol'] : (isset($existing_header['nopol']) ? $existing_header['nopol'] : '')) ?: null;
+
     if ($edit_id > 0) {
         $header_id = $edit_id;
         $nomor_dok = $existing_header['nomor_dokumen'];
@@ -122,6 +128,8 @@ try {
                 nomor_dokumen          = :nomor_dok,
                 tanggal_inspeksi       = :tanggal,
                 bulan_tahun            = :bulan_tahun,
+                unit                   = :unit,
+                nopol                  = :nopol,
                 jenis_pekerjaan        = :jenis,
                 regu_id                = :regu_id,
                 nama_pelaksana_1       = :nama1,
@@ -145,6 +153,8 @@ try {
             ':nomor_dok'   => $nomor_dok,
             ':tanggal'     => isset($_POST['tanggal_inspeksi']) ? $_POST['tanggal_inspeksi'] : date('Y-m-d'),
             ':bulan_tahun' => isset($_POST['bulan_tahun']) ? $_POST['bulan_tahun'] : date('F Y'),
+            ':unit'        => $unit,
+            ':nopol'       => $nopol,
             ':jenis'       => $jenis_pekerjaan,
             ':regu_id'     => $regu_id,
             ':nama1'       => trim(isset($_POST['nama_pelaksana_1']) ? $_POST['nama_pelaksana_1'] : ($user ? $user['nama_lengkap'] : 'Petugas Lapangan')),
@@ -173,12 +183,12 @@ try {
 
         $stmt_header = $pdo->prepare("
             INSERT INTO gelar_alat_header 
-                (nomor_dokumen, tanggal_inspeksi, bulan_tahun, jenis_pekerjaan, regu_id, 
+                (nomor_dokumen, tanggal_inspeksi, bulan_tahun, unit, nopol, jenis_pekerjaan, regu_id, 
                  nama_pelaksana_1, jabatan_petugas, nama_pelaksana_2, pendamping_admin, catatan_umum, 
                  foto_kegiatan, status, ttd_petugas, ttd_manajemen, nama_pejabat_manajemen, jabatan_manajemen,
                  nama_manager, jabatan_manager, ttd_manager, petugas_id)
             VALUES 
-                (:nomor_dok, :tanggal, :bulan_tahun, :jenis, :regu_id,
+                (:nomor_dok, :tanggal, :bulan_tahun, :unit, :nopol, :jenis, :regu_id,
                  :nama1, :jabatan, :nama2, :pendamping, :catatan,
                  :foto, :status, :ttd, :ttd_tl, :nama_tl, :jab_tl,
                  :nama_mgr, :jab_mgr, :ttd_mgr, :petugas_id)
@@ -187,6 +197,8 @@ try {
             ':nomor_dok'   => $nomor_dok,
             ':tanggal'     => isset($_POST['tanggal_inspeksi']) ? $_POST['tanggal_inspeksi'] : date('Y-m-d'),
             ':bulan_tahun' => isset($_POST['bulan_tahun']) ? $_POST['bulan_tahun'] : date('F Y'),
+            ':unit'        => $unit,
+            ':nopol'       => $nopol,
             ':jenis'       => $jenis_pekerjaan,
             ':regu_id'     => $regu_id,
             ':nama1'       => trim(isset($_POST['nama_pelaksana_1']) ? $_POST['nama_pelaksana_1'] : ($user ? $user['nama_lengkap'] : 'Petugas Lapangan')),

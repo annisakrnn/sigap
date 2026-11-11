@@ -19,7 +19,8 @@ if (!$id) {
 
 // Ambil header dokumen
 $stmt_h = $pdo->prepare("
-    SELECT h.*, r.nama_regu, r.nopol, r.kendaraan, r.jenis_pekerjaan AS regu_jenis,
+    SELECT h.*, r.nama_regu, r.kendaraan, r.jenis_pekerjaan AS regu_jenis,
+           COALESCE(NULLIF(h.nopol,''), r.nopol) AS nopol,
            u.nama_lengkap AS nama_petugas_user, u.no_hp AS hp_petugas,
            COALESCE(NULLIF(h.jabatan_petugas,''), u.jabatan) AS jabatan_petugas,
            COALESCE(NULLIF(h.nama_pelaksana_1,''), u.nama_lengkap) AS nama_petugas
@@ -151,6 +152,7 @@ require_once __DIR__ . '/../includes/header.php';
             <h3 style="font-size:0.875rem;color:var(--text-muted);font-weight:600;margin-bottom:10px;text-transform:uppercase;">Informasi Inspeksi</h3>
             <table style="width:100%;font-size:0.875rem;">
                 <tr><td style="color:var(--text-muted);padding:3px 0;width:130px;">Nomor Dokumen</td><td><strong><?= htmlspecialchars(isset($header['nomor_dokumen']) ? $header['nomor_dokumen'] : '-') ?></strong></td></tr>
+                <tr><td style="color:var(--text-muted);padding:3px 0;">Unit / ULP</td><td><strong style="color:var(--primary);"><?= htmlspecialchars(!empty($header['unit']) ? $header['unit'] : 'ULP Balong') ?></strong></td></tr>
                 <tr><td style="color:var(--text-muted);padding:3px 0;">Tanggal Apel</td><td><strong><?= date('d F Y', strtotime($header['tanggal_inspeksi'])) ?></strong></td></tr>
                 <tr><td style="color:var(--text-muted);padding:3px 0;">Bulan / Tahun</td><td><?= htmlspecialchars($header['bulan_tahun']) ?></td></tr>
                 <tr><td style="color:var(--text-muted);padding:3px 0;">Jenis Pekerjaan</td><td><?= strtoupper($header['jenis_pekerjaan']) ?></td></tr>

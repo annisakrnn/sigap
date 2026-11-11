@@ -216,7 +216,7 @@ if (isset($_GET['demo']) && $pdo) {
         </div>
 
         <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 6px;">
-            <i class="fa-solid fa-right-to-bracket"></i> Masuk (Khusus Manajemen)
+            <i class="fa-solid fa-right-to-bracket"></i> Masuk 
         </button>
     </form>
 

@@ -100,6 +100,8 @@ CREATE TABLE IF NOT EXISTS gelar_alat_header (
     nomor_dokumen          VARCHAR(100)  NULL,
     tanggal_inspeksi       DATE          NOT NULL,
     bulan_tahun            VARCHAR(50)   NOT NULL,
+    unit                   VARCHAR(100)  NOT NULL DEFAULT 'ULP Balong',
+    nopol                  VARCHAR(30)   NULL,
     jenis_pekerjaan        ENUM('p2tl', 'sr_app', 'yandal', 'har') NOT NULL,
     regu_id                INT           NOT NULL,
     nama_pelaksana_1       VARCHAR(100)  NOT NULL,

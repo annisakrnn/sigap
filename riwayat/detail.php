@@ -12,7 +12,8 @@ $user = get_logged_user();
 $id = intval(isset($_GET['id']) ? $_GET['id'] : 0);
 
 $stmt_h = $pdo->prepare("
-    SELECT h.*, r.nama_regu, r.nopol, r.kendaraan,
+    SELECT h.*, r.nama_regu, r.kendaraan,
+           COALESCE(NULLIF(h.nopol,''), r.nopol) AS nopol,
            u.nama_lengkap AS nama_petugas_user,
            COALESCE(NULLIF(h.jabatan_petugas,''), u.jabatan) AS jabatan_petugas,
            COALESCE(NULLIF(h.nama_pelaksana_1,''), u.nama_lengkap) AS nama_petugas
@@ -143,11 +144,12 @@ require_once __DIR__ . '/../includes/header.php';
             <h3 style="font-size:0.875rem;text-transform:uppercase;font-weight:700;color:var(--text-muted);margin-bottom:10px;">Informasi Inspeksi</h3>
             <table style="font-size:0.875rem;width:100%;">
                 <tr><td style="color:var(--text-muted);width:120px;padding:4px 0;">No. Dokumen</td><td><strong><?= htmlspecialchars(isset($header['nomor_dokumen']) ? $header['nomor_dokumen'] : '-') ?></strong></td></tr>
+                <tr><td style="color:var(--text-muted);padding:4px 0;">Unit / ULP</td><td><strong style="color:var(--primary);"><?= htmlspecialchars(!empty($header['unit']) ? $header['unit'] : 'ULP Balong') ?></strong></td></tr>
                 <tr><td style="color:var(--text-muted);padding:4px 0;">Jenis Pekerjaan</td><td><?= htmlspecialchars(isset($jenis_label[$header['jenis_pekerjaan']]) ? $jenis_label[$header['jenis_pekerjaan']] : '-') ?></td></tr>
                 <tr><td style="color:var(--text-muted);padding:4px 0;">Tanggal Apel</td><td><strong><?= date('d F Y', strtotime($header['tanggal_inspeksi'])) ?></strong></td></tr>
                 <tr><td style="color:var(--text-muted);padding:4px 0;">Regu / Armada</td><td><?= htmlspecialchars($header['nama_regu']) ?></td></tr>
                 <tr><td style="color:var(--text-muted);padding:4px 0;">Kendaraan</td><td><?= htmlspecialchars(isset($header['kendaraan']) ? $header['kendaraan'] : '-') ?></td></tr>
-                <tr><td style="color:var(--text-muted);padding:4px 0;">Nopol</td><td><strong><?= htmlspecialchars(isset($header['nopol']) ? $header['nopol'] : '-') ?></strong></td></tr>
+                <tr><td style="color:var(--text-muted);padding:4px 0;">Plat Nomor (Nopol)</td><td><strong><?= htmlspecialchars(isset($header['nopol']) ? $header['nopol'] : '-') ?></strong></td></tr>
             </table>
         </div>
         <div>

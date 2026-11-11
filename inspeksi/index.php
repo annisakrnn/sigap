@@ -25,14 +25,14 @@ foreach ($all_regus as $r) {
 
 // Ambil riwayat gelar alat terakhir (milik user login atau 5 laporan terakhir publik)
 if ($user && $user['role'] === 'petugas') {
-    $stmt_hist = $pdo->prepare("SELECT h.*, r.nama_regu, r.nopol 
+    $stmt_hist = $pdo->prepare("SELECT h.*, r.nama_regu, COALESCE(NULLIF(h.nopol,''), r.nopol) AS nopol 
         FROM gelar_alat_header h 
         JOIN regu r ON h.regu_id = r.id 
         WHERE h.petugas_id = :pid 
         ORDER BY h.created_at DESC LIMIT 5");
     $stmt_hist->execute([':pid' => $user['id']]);
 } else {
-    $stmt_hist = $pdo->query("SELECT h.*, r.nama_regu, r.nopol 
+    $stmt_hist = $pdo->query("SELECT h.*, r.nama_regu, COALESCE(NULLIF(h.nopol,''), r.nopol) AS nopol 
         FROM gelar_alat_header h 
         JOIN regu r ON h.regu_id = r.id 
         ORDER BY h.created_at DESC LIMIT 5");

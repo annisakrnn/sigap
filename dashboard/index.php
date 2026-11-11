@@ -206,7 +206,7 @@ $rekap_pengadaan = $stmt_procure->fetchAll(PDO::FETCH_ASSOC);
 
 // ===== 5. Antrean Persetujuan (Submitted) =====
 $stmt_pending = $pdo->query("
-    SELECT h.*, r.nama_regu, r.nopol, r.kendaraan, u.nama_lengkap AS nama_petugas, u.jabatan AS jabatan_petugas,
+    SELECT h.*, r.nama_regu, r.kendaraan, COALESCE(NULLIF(h.nopol,''), r.nopol) AS nopol, u.nama_lengkap AS nama_petugas, u.jabatan AS jabatan_petugas,
         (SELECT COUNT(*) FROM gelar_alat_detail d WHERE d.gelar_alat_id = h.id AND d.kondisi IN ('rusak','waktu_ganti')) AS jumlah_temuan
     FROM gelar_alat_header h
     JOIN regu r ON h.regu_id = r.id
@@ -233,7 +233,7 @@ $red_flags = $stmt_rf->fetchAll();
 
 // ===== 7. Riwayat Semua Laporan (Recent) =====
 $stmt_hist = $pdo->query("
-    SELECT h.*, r.nama_regu, r.nopol, u.nama_lengkap AS nama_petugas
+    SELECT h.*, r.nama_regu, COALESCE(NULLIF(h.nopol,''), r.nopol) AS nopol, u.nama_lengkap AS nama_petugas
     FROM gelar_alat_header h
     JOIN regu r ON h.regu_id = r.id
     JOIN users u ON h.petugas_id = u.id

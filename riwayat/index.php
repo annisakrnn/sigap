@@ -44,7 +44,7 @@ if (!empty($filter_sampai)) {
 $where_sql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
 
 $stmt = $pdo->prepare("
-    SELECT h.*, r.nama_regu, r.nopol, u.nama_lengkap AS nama_petugas,
+    SELECT h.*, r.nama_regu, COALESCE(NULLIF(h.nopol,''), r.nopol) AS nopol, u.nama_lengkap AS nama_petugas,
         (SELECT COUNT(*) FROM gelar_alat_detail d WHERE d.gelar_alat_id = h.id AND d.kondisi IN ('rusak','waktu_ganti')) AS jml_temuan
     FROM gelar_alat_header h
     JOIN regu r ON h.regu_id = r.id
@@ -168,6 +168,7 @@ require_once __DIR__ . '/../includes/header.php';
                         $search_keywords = strtolower(
                             (isset($row['nomor_dokumen']) ? $row['nomor_dokumen'] : '') . ' ' .
                             $row['nama_regu'] . ' ' .
+                            (isset($row['unit']) ? $row['unit'] : '') . ' ' .
                             (isset($row['nopol']) ? $row['nopol'] : '') . ' ' .
                             $nama_pemeriksa . ' ' .
                             (isset($row['nama_pelaksana_2']) ? $row['nama_pelaksana_2'] : '') . ' ' .
@@ -188,9 +189,10 @@ require_once __DIR__ . '/../includes/header.php';
                             </td>
                             <td>
                                 <div style="font-weight:600; color:var(--text-main); font-size:0.875rem;"><?= htmlspecialchars($row['nama_regu']) ?></div>
-                                <?php if ($row['nopol']): ?>
-                                    <div style="font-size:0.75rem; color:var(--text-muted);"><?= htmlspecialchars($row['nopol']) ?></div>
-                                <?php endif; ?>
+                                <div style="font-size:0.75rem; color:var(--text-muted);">
+                                    <?= htmlspecialchars(!empty($row['unit']) ? $row['unit'] : 'ULP Balong') ?>
+                                    <?php if ($row['nopol']): ?> &bull; <strong><?= htmlspecialchars($row['nopol']) ?></strong><?php endif; ?>
+                                </div>
                             </td>
                             <td>
                                 <div style="font-weight:600; color:var(--text-main); font-size:0.875rem;">

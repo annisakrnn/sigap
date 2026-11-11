@@ -178,8 +178,12 @@ require_once __DIR__ . '/../includes/header.php';
     </h1>
     <p style="color:var(--text-muted);font-size:0.9rem;">
         <?= htmlspecialchars($regu['nama_regu']) ?>
-        <?php if (!empty($regu['nopol'])): ?> &mdash; <strong><?= htmlspecialchars($regu['nopol']) ?></strong><?php endif; ?>
+        <?php 
+        $active_nopol = isset($edit_header['nopol']) && !empty($edit_header['nopol']) ? $edit_header['nopol'] : (isset($regu['nopol']) ? $regu['nopol'] : '');
+        if (!empty($active_nopol)): 
+        ?> &mdash; <strong><?= htmlspecialchars($active_nopol) ?></strong><?php endif; ?>
         | <?= htmlspecialchars(isset($regu['kendaraan']) ? $regu['kendaraan'] : '') ?>
+        <?php if (!empty($edit_header['unit'])): ?> &bull; <span class="badge" style="background:#e0f2fe;color:#0369a1;font-weight:600;"><?= htmlspecialchars($edit_header['unit']) ?></span><?php endif; ?>
         <?php if ($edit_header): ?> &bull; No: <strong><?= htmlspecialchars($edit_header['nomor_dokumen']) ?></strong><?php endif; ?>
     </p>
 </div>
@@ -221,7 +225,7 @@ require_once __DIR__ . '/../includes/header.php';
             <span class="badge badge-submitted">Wajib Diisi</span>
         </div>
 
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom:1rem;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; margin-bottom:1rem;">
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Tanggal Apel Gelar Alat</label>
                 <input type="date" name="tanggal_inspeksi" class="form-control" value="<?= htmlspecialchars(isset($edit_header['tanggal_inspeksi']) ? $edit_header['tanggal_inspeksi'] : date('Y-m-d')) ?>" required>
@@ -232,7 +236,30 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
         </div>
 
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom:1rem;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; margin-bottom:1rem;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Unit / ULP <span style="color:var(--danger);">*</span></label>
+                <select name="unit" id="unit" class="form-control" required>
+                    <?php
+                    $unit_options = ['ULP Balong', 'ULP Pacitan', 'ULP Ponorogo', 'ULP Trenggalek', 'UP3 Ponorogo'];
+                    $selected_unit = isset($edit_header['unit']) && !empty($edit_header['unit']) ? $edit_header['unit'] : 'ULP Balong';
+                    foreach ($unit_options as $opt):
+                    ?>
+                        <option value="<?= htmlspecialchars($opt) ?>" <?= $selected_unit === $opt ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($opt) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Plat Nomer Kendaraan <span style="color:var(--danger);">*</span></label>
+                <input type="text" name="nopol" id="nopol" class="form-control" 
+                    value="<?= htmlspecialchars(isset($edit_header['nopol']) && $edit_header['nopol'] !== '' ? $edit_header['nopol'] : (isset($regu['nopol']) ? $regu['nopol'] : '')) ?>" 
+                    placeholder="Contoh: AE 1234 XX" required>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; margin-bottom:1rem;">
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Nama Pelaksana / Pemeriksa 1 <span style="color:var(--danger);">*</span></label>
                 <input type="text" name="nama_pelaksana_1" class="form-control" value="<?= htmlspecialchars(isset($edit_header['nama_pelaksana_1']) ? $edit_header['nama_pelaksana_1'] : ($user ? $user['nama_lengkap'] : '')) ?>" placeholder="Ketik nama lengkap pemeriksa" required>
@@ -990,6 +1017,8 @@ function saveLocalDraft() {
 
     const draft = {
         savedAt: new Date().toISOString(),
+        unit: form.querySelector('[name="unit"]')?.value || '',
+        nopol: form.querySelector('[name="nopol"]')?.value || '',
         pelaksana1: form.querySelector('[name="nama_pelaksana_1"]')?.value || '',
         pelaksana2: form.querySelector('[name="nama_pelaksana_2"]')?.value || '',
         pendamping: form.querySelector('[name="pendamping_admin"]')?.value || '',
@@ -1050,6 +1079,8 @@ function restoreDraftData() {
         const draft = JSON.parse(raw);
         const form = document.getElementById('formGelarAlat');
 
+        if (draft.unit && form.querySelector('[name="unit"]')) form.querySelector('[name="unit"]').value = draft.unit;
+        if (draft.nopol && form.querySelector('[name="nopol"]')) form.querySelector('[name="nopol"]').value = draft.nopol;
         if (draft.pelaksana1) form.querySelector('[name="nama_pelaksana_1"]').value = draft.pelaksana1;
         if (draft.pelaksana2) form.querySelector('[name="nama_pelaksana_2"]').value = draft.pelaksana2;
         if (draft.pendamping) form.querySelector('[name="pendamping_admin"]').value = draft.pendamping;

@@ -13,7 +13,8 @@ $user = get_logged_user();
 $id = intval(isset($_GET['id']) ? $_GET['id'] : 0);
 
 $stmt_h = $pdo->prepare("
-    SELECT h.*, r.nama_regu, r.nopol, r.kendaraan,
+    SELECT h.*, r.nama_regu, r.kendaraan,
+           COALESCE(NULLIF(h.nopol,''), r.nopol) AS nopol,
            u.nama_lengkap AS nama_petugas_user,
            COALESCE(NULLIF(h.jabatan_petugas,''), u.jabatan) AS jabatan_petugas,
            COALESCE(NULLIF(h.nama_pelaksana_1,''), u.nama_lengkap) AS nama_pelaksana_1
@@ -165,11 +166,20 @@ $kondisi_label_print = [
 <div class="page">
 
     <!-- KOP SURAT -->
+    <?php
+    $cur_unit_print = !empty($header['unit']) ? $header['unit'] : 'ULP Balong';
+    $unit_label_kop = strtoupper($cur_unit_print);
+    if (strpos($unit_label_kop, 'ULP ') === 0) {
+        $unit_label_kop = 'UNIT LAYANAN PELANGGAN (' . $unit_label_kop . ')';
+    }
+    ?>
     <div class="kop">
         <div class="kop-text">
             <div class="unit">PT PLN (PERSERO) UP3 PONOROGO</div>
-            <div class="unit">UNIT LAYANAN PELANGGAN (ULP) BALONG</div>
-            <div class="alamat">JL. RAYA BALONG KM 12, BALONG, PONOROGO &mdash; JAWA TIMUR &mdash; 63471</div>
+            <?php if ($cur_unit_print !== 'UP3 Ponorogo'): ?>
+                <div class="unit"><?= htmlspecialchars($unit_label_kop) ?></div>
+            <?php endif; ?>
+            <div class="alamat"><?= htmlspecialchars(strtoupper($cur_unit_print)) ?> &mdash; JAWA TIMUR</div>
         </div>
     </div>
     <div class="kop-judul">
@@ -187,9 +197,9 @@ $kondisi_label_print = [
         </tr>
         <tr>
             <td style="font-weight:bold;background:#f5f5f5;border-right:1px solid #ccc;border-bottom:1px solid #ccc;">Regu / Unit</td>
-            <td style="border-right:1px solid #ccc;border-bottom:1px solid #ccc;"><?= htmlspecialchars($header['nama_regu']) ?></td>
+            <td style="border-right:1px solid #ccc;border-bottom:1px solid #ccc;"><?= htmlspecialchars($header['nama_regu']) ?> &bull; <strong><?= htmlspecialchars(!empty($header['unit']) ? $header['unit'] : 'ULP Balong') ?></strong></td>
             <td style="font-weight:bold;background:#f5f5f5;border-right:1px solid #ccc;border-bottom:1px solid #ccc;">Kendaraan / Nopol</td>
-            <td style="border-bottom:1px solid #ccc;"><?= htmlspecialchars(isset($header['kendaraan']) ? $header['kendaraan'] : '-') ?> / <?= htmlspecialchars(isset($header['nopol']) ? $header['nopol'] : '-') ?></td>
+            <td style="border-bottom:1px solid #ccc;"><?= htmlspecialchars(isset($header['kendaraan']) ? $header['kendaraan'] : '-') ?> / <strong><?= htmlspecialchars(isset($header['nopol']) ? $header['nopol'] : '-') ?></strong></td>
         </tr>
         <tr>
             <td style="font-weight:bold;background:#f5f5f5;border-right:1px solid #ccc;">Pelaksana 1</td>
