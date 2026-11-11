@@ -4,7 +4,7 @@
  * SIGAP - Role: Manajemen
  */
 require_once __DIR__ . '/../../includes/auth_check.php';
-require_role('manajemen');
+require_login();
 
 $pdo = get_db_connection();
 if (!$pdo) { header("Location: ../../setup.php"); exit; }

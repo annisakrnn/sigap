@@ -4,7 +4,7 @@
  * SIGAP - Role: Manajemen
  */
 require_once __DIR__ . '/../../includes/auth_check.php';
-require_role('manajemen');
+require_login();
 
 $pdo = get_db_connection();
 if (!$pdo) { header("Location: ../../setup.php"); exit; }
@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $username     = strtolower(trim(isset($_POST['username']) ? $_POST['username'] : ''));
         $password     = isset($_POST['password']) ? $_POST['password'] : '';
         $nama_lengkap = trim(isset($_POST['nama_lengkap']) ? $_POST['nama_lengkap'] : '');
-        $role         = trim(isset($_POST['role']) ? $_POST['role'] : 'petugas');
+        $role         = 'petugas';
         $jabatan      = trim(isset($_POST['jabatan']) ? $_POST['jabatan'] : '');
         $no_hp        = trim(isset($_POST['no_hp']) ? $_POST['no_hp'] : '');
 
@@ -28,8 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             set_flash('error', 'Semua kolom bertanda bintang (*) wajib diisi.');
         } elseif (strlen($password) < 6) {
             set_flash('error', 'Password minimal 6 karakter.');
-        } elseif (!in_array($role, ['petugas', 'manajemen'])) {
-            set_flash('error', 'Role pengguna tidak valid.');
+        } elseif (false) {
         } else {
             // Cek apakah username sudah ada
             $stmt_check = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = :username");
@@ -68,8 +67,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($id <= 0 || empty($username) || empty($nama_lengkap) || empty($jabatan)) {
             set_flash('error', 'Data tidak valid.');
-        } elseif (!in_array($role, ['petugas', 'manajemen'])) {
-            set_flash('error', 'Role pengguna tidak valid.');
         } else {
             // Cek apakah username sudah dipakai user lain
             $stmt_check = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = :username AND id != :id");
@@ -152,16 +149,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Filter query
-$filter_role = isset($_GET['role']) ? $_GET['role'] : '';
-$search      = trim(isset($_GET['q']) ? $_GET['q'] : '');
+$search = trim(isset($_GET['q']) ? $_GET['q'] : '');
 
 $where = [];
 $params = [];
-
-if (!empty($filter_role) && in_array($filter_role, ['petugas', 'manajemen'])) {
-    $where[] = "u.role = :role";
-    $params[':role'] = $filter_role;
-}
 
 if (!empty($search)) {
     $where[] = "(u.username LIKE :q OR u.nama_lengkap LIKE :q OR u.jabatan LIKE :q OR u.no_hp LIKE :q)";
@@ -172,19 +163,16 @@ $where_sql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
 
 $stmt = $pdo->prepare("
     SELECT u.*,
-           (SELECT COUNT(*) FROM gelar_alat_header h WHERE h.petugas_id = u.id) AS total_laporan_dibuat,
-           (SELECT COUNT(*) FROM gelar_alat_header h WHERE h.manajemen_id = u.id) AS total_laporan_diapprove
+           (SELECT COUNT(*) FROM gelar_alat_header h WHERE h.petugas_id = u.id) AS total_laporan_dibuat
     FROM users u
     {$where_sql}
-    ORDER BY u.role DESC, u.nama_lengkap ASC
+    ORDER BY u.nama_lengkap ASC
 ");
 $stmt->execute($params);
 $users_list = $stmt->fetchAll();
 
 // Total count
-$stats_role = $pdo->query("SELECT role, COUNT(*) as jml FROM users GROUP BY role")->fetchAll(PDO::FETCH_KEY_PAIR);
-$total_petugas = isset($stats_role['petugas']) ? $stats_role['petugas'] : 0;
-$total_manajemen = isset($stats_role['manajemen']) ? $stats_role['manajemen'] : 0;
+$total_petugas = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
 
 $page_title = "Kelola Pengguna";
 require_once __DIR__ . '/../../includes/header.php';
@@ -192,41 +180,41 @@ require_once __DIR__ . '/../../includes/header.php';
 
 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.75rem; flex-wrap:wrap; gap:1rem;">
     <div>
-        <h1 style="font-size:1.65rem; font-weight:800; letter-spacing:-0.02em; margin-bottom:4px; color:var(--text-main);">Kelola Pengguna (Users)</h1>
-        <p style="color:var(--text-muted); font-size:0.9rem;">Kelola akun petugas pelaksana lapangan dan pejabat manajemen yang berwenang.</p>
+        <h1 style="font-size:1.65rem; font-weight:800; letter-spacing:-0.02em; margin-bottom:4px; color:var(--text-main);">Kelola Pengguna (Petugas)</h1>
+        <p style="color:var(--text-muted); font-size:0.9rem;">Kelola akun petugas pelaksana lapangan yang berwenang mengisi checklist gelar alat.</p>
     </div>
     <button onclick="openModalTambah()" class="btn btn-primary">
-        <i class="fa-solid fa-user-plus"></i> Tambah Pengguna Baru
+        <i class="fa-solid fa-user-plus"></i> Tambah Petugas Baru
     </button>
 </div>
 
 <!-- Stats Ringkas -->
-<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
     <div class="card" style="padding:1.25rem; display:flex; align-items:center; gap:14px;">
         <div style="width:48px; height:48px; border-radius:var(--radius-lg); background:#eff6ff; color:#3b82f6; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
             <i class="fa-solid fa-users"></i>
         </div>
         <div>
-            <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">Total Pengguna</div>
-            <div style="font-size:1.4rem; font-weight:800; color:var(--text-main);"><?= $total_petugas + $total_manajemen ?></div>
+            <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">Total Akun Petugas</div>
+            <div style="font-size:1.4rem; font-weight:800; color:var(--text-main);"><?= $total_petugas ?></div>
         </div>
     </div>
     <div class="card" style="padding:1.25rem; display:flex; align-items:center; gap:14px;">
         <div style="width:48px; height:48px; border-radius:var(--radius-lg); background:#f0fdf4; color:#22c55e; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
-            <i class="fa-solid fa-user-gear"></i>
+            <i class="fa-solid fa-user-check"></i>
         </div>
         <div>
-            <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">Petugas Pelaksana</div>
-            <div style="font-size:1.4rem; font-weight:800; color:#15803d;"><?= $total_petugas ?></div>
+            <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">Role Sistem Aktif</div>
+            <div style="font-size:1.1rem; font-weight:800; color:#15803d;">Petugas Lapangan</div>
         </div>
     </div>
     <div class="card" style="padding:1.25rem; display:flex; align-items:center; gap:14px;">
-        <div style="width:48px; height:48px; border-radius:var(--radius-lg); background:#faf5ff; color:#a855f7; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
-            <i class="fa-solid fa-user-tie"></i>
+        <div style="width:48px; height:48px; border-radius:var(--radius-lg); background:#e0f2fe; color:#0284c7; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
+            <i class="fa-solid fa-signature"></i>
         </div>
         <div>
-            <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">Manajemen / Approval</div>
-            <div style="font-size:1.4rem; font-weight:800; color:#7e22ce;"><?= $total_manajemen ?></div>
+            <div style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">Verifikasi & Pengesahan</div>
+            <div style="font-size:1.05rem; font-weight:700; color:#0369a1;">Fisik Offline (Cetak BA)</div>
         </div>
     </div>
 </div>
@@ -234,23 +222,15 @@ require_once __DIR__ . '/../../includes/header.php';
 <!-- Filter Bar -->
 <div class="card" style="margin-bottom:1.5rem; padding:1.25rem 1.5rem;">
     <form method="GET" style="display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end;">
-        <div style="flex:1; min-width:220px;">
-            <label class="form-label" style="font-size:0.8rem;">Cari Nama, Username, Jabatan, HP</label>
+        <div style="flex:1; min-width:260px;">
+            <label class="form-label" style="font-size:0.8rem;">Cari Nama Petugas, Username, Jabatan, HP</label>
             <input type="text" name="q" class="form-control" placeholder="Contoh: Yusuf, Ropiko, 0812..." value="<?= htmlspecialchars($search) ?>" style="font-size:0.85rem; padding:6px 12px;">
-        </div>
-        <div>
-            <label class="form-label" style="font-size:0.8rem;">Filter Role</label>
-            <select name="role" class="form-control" style="font-size:0.85rem; padding:6px 12px; min-width:160px;">
-                <option value="">Semua Role</option>
-                <option value="petugas" <?= $filter_role === 'petugas' ? 'selected' : '' ?>>Petugas Lapangan</option>
-                <option value="manajemen" <?= $filter_role === 'manajemen' ? 'selected' : '' ?>>Manajemen</option>
-            </select>
         </div>
         <div style="display:flex; gap:8px;">
             <button type="submit" class="btn btn-primary" style="padding:7px 16px; font-size:0.85rem;">
                 <i class="fa-solid fa-magnifying-glass"></i> Cari
             </button>
-            <?php if (!empty($search) || !empty($filter_role)): ?>
+            <?php if (!empty($search)): ?>
                 <a href="index.php" class="btn btn-outline" style="padding:7px 16px; font-size:0.85rem;">
                     <i class="fa-solid fa-rotate-left"></i> Reset
                 </a>
@@ -296,13 +276,13 @@ require_once __DIR__ . '/../../includes/header.php';
                         <?php 
                         $is_self = ($row['id'] == $current_user['id']);
                         $initials = strtoupper(substr($row['nama_lengkap'], 0, 2));
-                        $total_aktif = ($row['role'] === 'petugas') ? $row['total_laporan_dibuat'] : $row['total_laporan_diapprove'];
+                        $total_aktif = (int)$row['total_laporan_dibuat'];
                         ?>
                         <tr>
                             <td style="color:var(--text-muted); font-size:0.8rem;"><?= $i + 1 ?></td>
                             <td>
                                 <div style="display:flex; align-items:center; gap:10px;">
-                                    <div style="width:36px; height:36px; border-radius:50%; background:<?= $row['role'] === 'manajemen' ? '#f3e8ff; color:#7e22ce' : '#e0f2fe; color:#0284c7' ?>; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8rem; flex-shrink:0;">
+                                    <div style="width:36px; height:36px; border-radius:50%; background:#e0f2fe; color:#0284c7; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8rem; flex-shrink:0;">
                                         <?= $initials ?>
                                     </div>
                                     <div>
@@ -319,15 +299,9 @@ require_once __DIR__ . '/../../includes/header.php';
                                 </div>
                             </td>
                             <td>
-                                <?php if ($row['role'] === 'manajemen'): ?>
-                                    <span class="badge" style="background:#faf5ff; color:#7e22ce; border:1px solid #e9d5ff; font-size:0.72rem;">
-                                        <i class="fa-solid fa-user-tie"></i> Manajemen
-                                    </span>
-                                <?php else: ?>
-                                    <span class="badge" style="background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; font-size:0.72rem;">
-                                        <i class="fa-solid fa-user-gear"></i> Petugas
-                                    </span>
-                                <?php endif; ?>
+                                <span class="badge" style="background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; font-size:0.72rem;">
+                                    <i class="fa-solid fa-user-check"></i> Petugas
+                                </span>
                             </td>
                             <td style="font-size:0.85rem; color:var(--text-main);">
                                 <?= htmlspecialchars($row['jabatan']) ?>
@@ -388,11 +362,11 @@ require_once __DIR__ . '/../../includes/header.php';
                     <input type="text" id="username" name="username" class="form-control" placeholder="Contoh: budi_sr" required style="font-family:monospace;">
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="role">Role Akses <span style="color:#ef4444;">*</span></label>
-                    <select id="role" name="role" class="form-control" required>
-                        <option value="petugas">Petugas Lapangan</option>
-                        <option value="manajemen">Manajemen (Approver)</option>
-                    </select>
+                    <label class="form-label">Role Akses</label>
+                    <input type="hidden" id="role" name="role" value="petugas">
+                    <div style="padding:0.65rem 0.95rem; background:#f8fafc; border:1px solid var(--border-color); border-radius:var(--radius-md); font-size:0.875rem; font-weight:600; color:#0369a1; display:flex; align-items:center; gap:6px;">
+                        <i class="fa-solid fa-user-check"></i> Petugas Lapangan
+                    </div>
                 </div>
             </div>
 

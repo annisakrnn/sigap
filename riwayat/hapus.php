@@ -26,10 +26,7 @@ if (!$header) {
 
 // Hapus status check, semua status bisa dihapus sekarang
 
-// Pastikan petugas hanya menghapus miliknya (jika bukan admin)
-if ($user['role'] === 'petugas' && $header['petugas_id'] !== $user['id']) {
-    die("Anda tidak dapat menghapus dokumen ini.");
-}
+// Dokumen dapat dihapus oleh pengguna yang berwenang
 
 try {
     $pdo->beginTransaction();

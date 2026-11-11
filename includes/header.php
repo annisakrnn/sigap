@@ -6,14 +6,14 @@ require_once __DIR__ . '/auth_check.php';
 $user = get_logged_user();
 $current_page = basename($_SERVER['PHP_SELF']);
 
-// Hitung laporan menunggu approval untuk badge manajemen
-$pending_count = 0;
-if ($user && $user['role'] === 'manajemen') {
+// Hitung total laporan pemeriksaan
+$total_inspeksi_count = 0;
+if ($user) {
     $pdo = get_db_connection();
     if ($pdo) {
         try {
-            $stmt = $pdo->query("SELECT COUNT(*) FROM gelar_alat_header WHERE status = 'submitted'");
-            $pending_count = $stmt->fetchColumn() ?: 0;
+            $stmt = $pdo->query("SELECT COUNT(*) FROM gelar_alat_header");
+            $total_inspeksi_count = $stmt->fetchColumn() ?: 0;
         } catch (Exception $e) {}
     }
 }
@@ -67,8 +67,8 @@ if ($user && $user['role'] === 'manajemen') {
         </div>
         <div class="sidebar-user-info">
             <div class="sidebar-user-name"><?= htmlspecialchars($user['nama_lengkap']) ?></div>
-            <span class="user-role-badge role-<?= $user['role'] ?>">
-                <?= $user['role'] === 'manajemen' ? 'Manajemen' : 'Petugas' ?>
+            <span class="user-role-badge role-petugas">
+                Petugas Lapangan
             </span>
         </div>
     </div>
@@ -77,68 +77,45 @@ if ($user && $user['role'] === 'manajemen') {
     <nav class="sidebar-nav">
         <div class="sidebar-nav-label">Menu Utama</div>
         <ul class="sidebar-menu">
-            <?php if ($user['role'] === 'petugas'): ?>
-                <li>
-                    <a href="<?= base_url('inspeksi/index.php') ?>" class="sidebar-link <?= strpos($_SERVER['REQUEST_URI'], '/inspeksi') !== false ? 'active' : '' ?>">
-                        <i class="fa-solid fa-clipboard-check"></i>
-                        <span>Form Gelar Alat</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= base_url('riwayat/index.php') ?>" class="sidebar-link <?= strpos($_SERVER['REQUEST_URI'], '/riwayat') !== false ? 'active' : '' ?>">
-                        <i class="fa-solid fa-clock-rotate-left"></i>
-                        <span>Riwayat Saya</span>
-                    </a>
-                </li>
-            <?php else: // manajemen ?>
-                <li>
-                    <a href="<?= base_url('dashboard/index.php') ?>" class="sidebar-link <?= strpos($_SERVER['REQUEST_URI'], '/dashboard') !== false ? 'active' : '' ?>">
-                        <i class="fa-solid fa-chart-pie"></i>
-                        <span>Dashboard K3</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= base_url('riwayat/index.php?status=submitted') ?>" class="sidebar-link <?= isset($_GET['status']) && $_GET['status'] === 'submitted' ? 'active' : '' ?>">
-                        <i class="fa-solid fa-file-signature"></i>
-                        <span>Antrean Approval</span>
-                        <?php if ($pending_count > 0): ?>
-                            <span class="sidebar-badge"><?= $pending_count ?></span>
-                        <?php endif; ?>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= base_url('riwayat/index.php') ?>" class="sidebar-link <?= strpos($_SERVER['REQUEST_URI'], '/riwayat') !== false && (!isset($_GET['status']) || $_GET['status'] !== 'submitted') ? 'active' : '' ?>">
-                        <i class="fa-solid fa-folder-open"></i>
-                        <span>Rekap Berita Acara</span>
-                    </a>
-                </li>
+            <li>
+                <a href="<?= base_url('inspeksi/index.php') ?>" class="sidebar-link <?= strpos($_SERVER['REQUEST_URI'], '/inspeksi') !== false ? 'active' : '' ?>">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    <span>Form Gelar Alat</span>
+                </a>
+            </li>
+            <li>
+                <a href="<?= base_url('riwayat/index.php') ?>" class="sidebar-link <?= strpos($_SERVER['REQUEST_URI'], '/riwayat') !== false ? 'active' : '' ?>">
+                    <i class="fa-solid fa-folder-open"></i>
+                    <span>Riwayat & Berita Acara</span>
+                </a>
+            </li>
+            <li>
+                <a href="<?= base_url('dashboard/index.php') ?>" class="sidebar-link <?= strpos($_SERVER['REQUEST_URI'], '/dashboard') !== false ? 'active' : '' ?>">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Dashboard K3</span>
+                </a>
+            </li>
 
-                <div class="sidebar-nav-label" style="margin-top:14px;">Master Data</div>
-                <li>
-                    <a href="<?= base_url('master/regu/index.php') ?>" class="sidebar-link <?= strpos($_SERVER['REQUEST_URI'], '/master/regu') !== false ? 'active' : '' ?>">
-                        <i class="fa-solid fa-truck-ramp-box"></i>
-                        <span>Regu & Armada</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= base_url('master/barang/index.php') ?>" class="sidebar-link <?= strpos($_SERVER['REQUEST_URI'], '/master/barang') !== false ? 'active' : '' ?>">
-                        <i class="fa-solid fa-toolbox"></i>
-                        <span>Katalog Peralatan</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= base_url('master/template/index.php') ?>" class="sidebar-link <?= strpos($_SERVER['REQUEST_URI'], '/master/template') !== false ? 'active' : '' ?>">
-                        <i class="fa-solid fa-list-check"></i>
-                        <span>Template Checklist</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="<?= base_url('master/users/index.php') ?>" class="sidebar-link <?= strpos($_SERVER['REQUEST_URI'], '/master/users') !== false ? 'active' : '' ?>">
-                        <i class="fa-solid fa-users-gear"></i>
-                        <span>Kelola Pengguna</span>
-                    </a>
-                </li>
-            <?php endif; ?>
+            <div class="sidebar-nav-label" style="margin-top:14px;">Master Data</div>
+            <li>
+                <a href="<?= base_url('master/regu/index.php') ?>" class="sidebar-link <?= strpos($_SERVER['REQUEST_URI'], '/master/regu') !== false ? 'active' : '' ?>">
+                    <i class="fa-solid fa-truck-ramp-box"></i>
+                    <span>Regu & Armada</span>
+                </a>
+            </li>
+            <li>
+                <a href="<?= base_url('master/barang/index.php') ?>" class="sidebar-link <?= strpos($_SERVER['REQUEST_URI'], '/master/barang') !== false ? 'active' : '' ?>">
+                    <i class="fa-solid fa-toolbox"></i>
+                    <span>Katalog Peralatan</span>
+                </a>
+            </li>
+            <li>
+                <a href="<?= base_url('master/template/index.php') ?>" class="sidebar-link <?= strpos($_SERVER['REQUEST_URI'], '/master/template') !== false ? 'active' : '' ?>">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>Template Checklist</span>
+                </a>
+            </li>
+
         </ul>
     </nav>
 

@@ -64,16 +64,18 @@ function require_login() {
 
 function require_role($allowed_roles) {
     require_login();
+    // Sistem kini hanya menggunakan role 'petugas' (TL & Manajemen TTD Offline)
     $roles = is_array($allowed_roles) ? $allowed_roles : [$allowed_roles];
-    $current_role = isset($_SESSION['role']) ? $_SESSION['role'] : '';
+    $current_role = isset($_SESSION['role']) ? $_SESSION['role'] : 'petugas';
+    
+    // Izinkan semua akses untuk petugas
+    if (in_array('manajemen', $roles) || in_array('petugas', $roles)) {
+        return;
+    }
     
     if (!in_array($current_role, $roles)) {
-        $_SESSION['flash_error'] = "Akses ditolak: Anda tidak memiliki izin untuk membuka halaman tersebut.";
-        if ($current_role === 'manajemen') {
-            header("Location: " . base_url('dashboard/index.php'));
-        } else {
-            header("Location: " . base_url('inspeksi/index.php'));
-        }
+        $_SESSION['flash_error'] = "Akses ditolak.";
+        header("Location: " . base_url('inspeksi/index.php'));
         exit;
     }
 }

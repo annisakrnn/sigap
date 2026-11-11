@@ -4,7 +4,7 @@
  * SIGAP - Sistem Informasi Gelar Alat & Perlengkapan K3
  */
 require_once __DIR__ . '/../includes/auth_check.php';
-require_role('manajemen');
+require_login();
 
 $pdo = get_db_connection();
 if (!$pdo) { header("Location: ../setup.php"); exit; }
@@ -242,7 +242,7 @@ $stmt_hist = $pdo->query("
 ");
 $recent_all = $stmt_hist->fetchAll();
 
-$page_title = "Dashboard Rekapitulasi & Analitik K3";
+$page_title = "Dashboard K3 & Rekapitulasi Gelar Alat";
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
@@ -251,7 +251,7 @@ require_once __DIR__ . '/../includes/header.php';
     <div>
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
             <span class="badge" style="background:linear-gradient(135deg, #0072ce 0%, #0284c7 100%); color:#ffffff; font-weight:700; font-size:0.75rem; padding:3px 10px; border-radius:20px;">
-                <i class="fa-solid fa-chart-line"></i> Analitik Manajemen
+                <i class="fa-solid fa-chart-line"></i> Analitik Operasional & K3
             </span>
             <span style="font-size:0.8rem; color:var(--text-muted);">&bull; Monitoring Kelaikan Alat & Perlengkapan</span>
         </div>
@@ -577,7 +577,7 @@ $alat_rusak_aktif = intval($rekap_global['alat_rusak_aktif']);
                         <th style="text-align:center;">Total Temuan</th>
                         <th>Status Penanganan</th>
                         <th>Regu Lapangan Terdampak</th>
-                        <th>Rekomendasi Aksi Manajemen</th>
+                        <th>Rekomendasi Tindak Lanjut</th>
                         <th style="text-align:center;">Aksi</th>
                     </tr>
                 </thead>
@@ -694,7 +694,7 @@ $alat_rusak_aktif = intval($rekap_global['alat_rusak_aktif']);
     <div class="card-header">
         <h2 class="card-title">
             <i class="fa-solid fa-file-signature" style="color:var(--primary);"></i>
-            Antrean Menunggu Tanda Tangan Anda
+            Laporan Pemeriksaan Siap Cetak (TTD Offline)
             <?php if ($pending > 0): ?>
                 <span class="badge badge-rejected" style="font-size:0.7rem;"><?= $pending ?> laporan</span>
             <?php endif; ?>
@@ -707,8 +707,8 @@ $alat_rusak_aktif = intval($rekap_global['alat_rusak_aktif']);
             <div style="width:48px; height:48px; border-radius:50%; background:#f0fdf4; color:#16a34a; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-size:1.4rem;">
                 <i class="fa-solid fa-check"></i>
             </div>
-            <strong style="color:var(--text-main); font-size:0.95rem;">Semua Laporan Telah Ditinjau</strong>
-            <p style="font-size:0.825rem; margin-top:2px;">Tidak ada dokumen gelar alat yang menunggu tanda tangan Anda saat ini.</p>
+            <strong style="color:var(--text-main); font-size:0.95rem;">Belum Ada Laporan Masuk</strong>
+            <p style="font-size:0.825rem; margin-top:2px;">Semua dokumen gelar alat telah dicetak / diproses.</p>
         </div>
     <?php else: ?>
         <div class="table-responsive">
@@ -757,8 +757,8 @@ $alat_rusak_aktif = intval($rekap_global['alat_rusak_aktif']);
                                 <?= date('d M, H:i', strtotime($row['created_at'])) ?>
                             </td>
                             <td style="text-align:center;">
-                                <a href="<?= base_url('approval/review.php?id=' . $row['id']) ?>" class="btn btn-primary btn-sm">
-                                    <i class="fa-solid fa-signature"></i> Review & Sahkan
+                                <a href="<?= base_url('riwayat/detail.php?id=' . $row['id']) ?>" class="btn btn-primary btn-sm">
+                                    <i class="fa-solid fa-print"></i> Detail & Cetak
                                 </a>
                             </td>
                         </tr>

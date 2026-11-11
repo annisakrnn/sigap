@@ -60,16 +60,8 @@ if ($edit_id > 0) {
     }
 }
 
-// Validasi TTD untuk submit
-if ($action === 'submit') {
-    $ttd = trim(isset($_POST['ttd_petugas']) ? $_POST['ttd_petugas'] : '');
-    $has_existing_ttd = ($existing_header && !empty($existing_header['ttd_petugas']));
-    if ((empty($ttd) || strlen($ttd) < 100) && !$has_existing_ttd) {
-        set_flash('error', "Tanda tangan digital petugas pemeriksa belum diisi. Silakan tanda tangan pada kolom yang tersedia.");
-        $redirect_back = $edit_id ? "form.php?edit_id={$edit_id}" : "form.php?jenis={$jenis_pekerjaan}&regu_id={$regu_id}";
-        header("Location: " . $redirect_back); exit;
-    }
-}
+// Validasi TTD untuk submit (kini opsional karena tanda tangan & verifikasi offline)
+$ttd = trim(isset($_POST['ttd_petugas']) ? $_POST['ttd_petugas'] : '');
 
 try {
     $pdo->beginTransaction();
@@ -90,25 +82,14 @@ try {
     $raw_ttd = trim(isset($_POST['ttd_petugas']) ? $_POST['ttd_petugas'] : '');
     $ttd_petugas = (!empty($raw_ttd) && strlen($raw_ttd) >= 100) ? $raw_ttd : (isset($existing_header['ttd_petugas']) ? $existing_header['ttd_petugas'] : null);
 
-    // Data TL / Manajemen (Pihak 2) - Hanya dapat diisi jika login sebagai akun manajemen
-    $is_manajemen_user = ($user && $user['role'] === 'manajemen');
-    if ($is_manajemen_user) {
-        $raw_ttd_tl = trim(isset($_POST['ttd_manajemen']) ? $_POST['ttd_manajemen'] : '');
-        $ttd_manajemen = (!empty($raw_ttd_tl) && strlen($raw_ttd_tl) >= 100) ? $raw_ttd_tl : (isset($existing_header['ttd_manajemen']) ? $existing_header['ttd_manajemen'] : null);
-        $nama_pejabat_manajemen = trim(isset($_POST['nama_pejabat_manajemen']) ? $_POST['nama_pejabat_manajemen'] : ($user['nama_lengkap'] ?? '')) ?: null;
-        $jabatan_manajemen = trim(isset($_POST['jabatan_manajemen']) ? $_POST['jabatan_manajemen'] : ($user['jabatan'] ?? '')) ?: null;
-    } else {
-        // Petugas tidak dapat memanipulasi tanda tangan & nama TL
-        $ttd_manajemen = isset($existing_header['ttd_manajemen']) ? $existing_header['ttd_manajemen'] : null;
-        $nama_pejabat_manajemen = isset($existing_header['nama_pejabat_manajemen']) ? $existing_header['nama_pejabat_manajemen'] : null;
-        $jabatan_manajemen = isset($existing_header['jabatan_manajemen']) ? $existing_header['jabatan_manajemen'] : null;
-    }
+    // Kolom TTD Team Leader & Manager untuk pencetakan Berita Acara (TTD Fisik Offline)
+    $ttd_manajemen = null;
+    $nama_pejabat_manajemen = isset($existing_header['nama_pejabat_manajemen']) && !empty($existing_header['nama_pejabat_manajemen']) ? $existing_header['nama_pejabat_manajemen'] : 'Team Leader / Pengawas K3';
+    $jabatan_manajemen = isset($existing_header['jabatan_manajemen']) && !empty($existing_header['jabatan_manajemen']) ? $existing_header['jabatan_manajemen'] : 'Team Leader K3 / Pengawas';
 
-    // Data Manager (Pihak 3 - Wajib diisi saat submit, TTD Offline)
-    $raw_ttd_mgr = trim(isset($_POST['ttd_manager']) ? $_POST['ttd_manager'] : '');
-    $ttd_manager = (!empty($raw_ttd_mgr) && strlen($raw_ttd_mgr) >= 100) ? $raw_ttd_mgr : (isset($existing_header['ttd_manager']) ? $existing_header['ttd_manager'] : null);
-    $nama_manager = trim(isset($_POST['nama_manager']) ? $_POST['nama_manager'] : (isset($existing_header['nama_manager']) ? $existing_header['nama_manager'] : '')) ?: 'Manager ULP';
-    $jabatan_manager = trim(isset($_POST['jabatan_manager']) ? $_POST['jabatan_manager'] : (isset($existing_header['jabatan_manager']) ? $existing_header['jabatan_manager'] : '')) ?: 'Manager ULP';
+    $ttd_manager = null;
+    $nama_manager = isset($existing_header['nama_manager']) && !empty($existing_header['nama_manager']) ? $existing_header['nama_manager'] : 'Manager ULP';
+    $jabatan_manager = isset($existing_header['jabatan_manager']) && !empty($existing_header['jabatan_manager']) ? $existing_header['jabatan_manager'] : 'Manager ULP';
 
     // Unit & Plat Nomor Kendaraan
     $allowed_units = ['ULP Balong', 'ULP Pacitan', 'ULP Ponorogo', 'ULP Trenggalek', 'UP3 Ponorogo'];
@@ -289,33 +270,13 @@ try {
         ]);
     }
 
-    // 4. Kirim Notifikasi ke Manajemen jika disubmit
-    if ($action === 'submit') {
-        try {
-            $manajemen_users = $pdo->query("SELECT id FROM users WHERE role = 'manajemen'")->fetchAll(PDO::FETCH_COLUMN);
-            $stmt_notif = $pdo->prepare("
-                INSERT INTO notifikasi (user_id, judul, pesan, tipe, url_aksi)
-                VALUES (:uid, :judul, :pesan, 'info', :url)
-            ");
-            $nama_notif_sender = trim(isset($_POST['nama_pelaksana_1']) ? $_POST['nama_pelaksana_1'] : ($user ? $user['nama_lengkap'] : 'Pelaksana Lapangan'));
-            foreach ($manajemen_users as $mid) {
-                $stmt_notif->execute([
-                    ':uid'   => $mid,
-                    ':judul' => ($edit_id > 0 ? "Revisi Gelar Alat Masuk: " : "Laporan Gelar Alat Baru: ") . $nomor_dok,
-                    ':pesan' => "Petugas {$nama_notif_sender} telah " . ($edit_id > 0 ? "mengirimkan revisi dokumen" : "mengirimkan laporan") . " gelar alat untuk direview.",
-                    ':url'   => 'approval/review.php?id=' . $header_id
-                ]);
-            }
-        } catch (Exception $e) {
-            // Abaikan jika ada kendala notifikasi
-        }
-    }
+    // Notifikasi offline (tidak perlu push notif ke manajemen karena approval offline)
 
     $pdo->commit();
 
     if ($action === 'submit') {
-        $msg_prefix = ($edit_id > 0) ? "Revisi Laporan Gelar Alat berhasil dikirimkan kembali ke Manajemen Atasan!" : "Laporan Gelar Alat berhasil dikirimkan ke Manajemen Atasan!";
-        set_flash('success', "{$msg_prefix} Nomor Dokumen: <strong>{$nomor_dok}</strong>. Menunggu persetujuan & tanda tangan atasan.");
+        $msg_prefix = ($edit_id > 0) ? "Revisi Laporan Gelar Alat berhasil disimpan!" : "Laporan Gelar Alat berhasil disimpan!";
+        set_flash('success', "{$msg_prefix} Nomor Dokumen: <strong>{$nomor_dok}</strong>. Silakan cetak Berita Acara untuk ditandatangani dan diverifikasi secara offline.");
     } else {
         set_flash('success', "Draft berhasil disimpan dengan Nomor Dokumen: <strong>{$nomor_dok}</strong>. Anda dapat melanjutkan pengisian kapan saja.");
     }

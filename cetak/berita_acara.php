@@ -301,6 +301,7 @@ $kondisi_label_print = [
                     <?php if (!empty($header['ttd_manager'])): ?>
                         <img src="<?= htmlspecialchars($header['ttd_manager']) ?>" style="max-height:50px;max-width:140px;">
                     <?php else: ?>
+                        <div style="height:50px;"></div>
                     <?php endif; ?>
                 </div>
                 <div class="ttd-name"><?= htmlspecialchars(!empty($header['nama_manager']) ? $header['nama_manager'] : (!empty($header['nama_pejabat_manajemen']) ? $header['nama_pejabat_manajemen'] : '...........................................')) ?></div>

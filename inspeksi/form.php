@@ -16,16 +16,8 @@ $edit_header = null;
 $existing_details_map = [];
 
 if ($edit_id > 0) {
-    if ($user && $user['role'] === 'manajemen') {
-        $stmt_edit = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id LIMIT 1");
-        $stmt_edit->execute([':id' => $edit_id]);
-    } elseif ($user) {
-        $stmt_edit = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id AND petugas_id = :uid LIMIT 1");
-        $stmt_edit->execute([':id' => $edit_id, ':uid' => $user['id']]);
-    } else {
-        $stmt_edit = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id LIMIT 1");
-        $stmt_edit->execute([':id' => $edit_id]);
-    }
+    $stmt_edit = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id LIMIT 1");
+    $stmt_edit->execute([':id' => $edit_id]);
     $edit_header = $stmt_edit->fetch();
 
     if (!$edit_header) {
@@ -121,8 +113,8 @@ foreach ($all_items as $item) {
     $items_by_kategori[$item['kategori']][] = $item;
 }
 
-// Ambil data pejabat manajemen untuk referensi datalist
-$stmt_mgr = $pdo->query("SELECT id, nama_lengkap, jabatan FROM users WHERE role = 'manajemen' ORDER BY nama_lengkap ASC");
+// Ambil data referensi personil untuk datalist
+$stmt_mgr = $pdo->query("SELECT id, nama_lengkap, jabatan FROM users ORDER BY nama_lengkap ASC");
 $manager_list = $stmt_mgr ? $stmt_mgr->fetchAll() : [];
 
 $kategori_labels = [
@@ -252,10 +244,10 @@ require_once __DIR__ . '/../includes/header.php';
                 </select>
             </div>
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Plat Nomer Kendaraan <span style="color:var(--danger);">*</span></label>
-                <input type="text" name="nopol" id="nopol" class="form-control" 
-                    value="<?= htmlspecialchars(isset($edit_header['nopol']) && $edit_header['nopol'] !== '' ? $edit_header['nopol'] : (isset($regu['nopol']) ? $regu['nopol'] : '')) ?>" 
-                    placeholder="Contoh: AE 1234 XX" required>
+                <label class="form-label">Plat Nomer Kendaraan</label>
+                <input type="text" name="nopol" id="nopol" class="form-control"
+                    value="<?= htmlspecialchars(isset($edit_header['nopol']) && $edit_header['nopol'] !== '' ? $edit_header['nopol'] : (isset($regu['nopol']) ? $regu['nopol'] : '')) ?>"
+                    placeholder="Contoh: AE 1234 XX">
             </div>
         </div>
 
@@ -512,282 +504,81 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
     </div>
 
-    <!-- ===== SECTION 5: Lembar Tanda Tangan & Pengesahan Dokumen ===== -->
+    <!-- ===== SECTION 5: Lembar Tanda Tangan Petugas Pemeriksa ===== -->
     <div class="card" style="margin-bottom:1.25rem; border-left: 4px solid var(--navy);">
         <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
             <h2 class="card-title" style="font-size:1.05rem;">
-                <i class="fa-solid fa-signature" style="color:var(--navy);margin-right:6px;"></i> C. Lembar Tanda Tangan & Pengesahan Dokumen
+                <i class="fa-solid fa-user-pen" style="color:var(--navy);margin-right:6px;"></i> C. Petugas Pemeriksa Lapangan
             </h2>
-            <div style="font-size:0.75rem; color:var(--text-muted); background:#f1f5f9; padding:4px 10px; border-radius:6px; border:1px solid #cbd5e1;">
-                <strong>Alur Tanda Tangan:</strong> 1. Petugas &rarr; 2. TL / Manajemen &rarr; 3. Manager
+            <div style="font-size:0.75rem; color:#0369a1; background:#e0f2fe; padding:4px 10px; border-radius:6px; border:1px solid #bae6fd; font-weight:600;">
+                <i class="fa-solid fa-print"></i> Verifikasi TL & Pengesahan Manager Offline pada Cetak Berita Acara
             </div>
         </div>
 
-        <!-- Timeline / Flow Indicator -->
-        <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin:12px 0 16px 0; padding:10px 14px; background:#f8fafc; border:1px solid var(--border-color); border-radius:8px; font-size:0.8rem; flex-wrap:wrap;">
-            <div style="display:flex; align-items:center; gap:6px; color:#0f172a; font-weight:700;">
-                <span style="width:22px; height:22px; border-radius:50%; background:#2563eb; color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem;">1</span>
-                Petugas Lapangan (Pemeriksa)
-            </div>
-            <i class="fa-solid fa-arrow-right" style="color:#94a3b8; font-size:0.75rem;"></i>
-            <div style="display:flex; align-items:center; gap:6px; color:#0f172a; font-weight:700;">
-                <span style="width:22px; height:22px; border-radius:50%; background:#0284c7; color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem;">2</span>
-                TL / Manajemen (Verifikasi)
-            </div>
-            <i class="fa-solid fa-arrow-right" style="color:#94a3b8; font-size:0.75rem;"></i>
-            <div style="display:flex; align-items:center; gap:6px; color:#0f172a; font-weight:700;">
-                <span style="width:22px; height:22px; border-radius:50%; background:#10b981; color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem;">3</span>
-                Manager ULP (Pengesahan)
-            </div>
-        </div>
-
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:20px; margin-top:8px;">
-            <!-- ================= 1. PETUGAS PEMERIKSA (WAJIB) ================= -->
-            <div style="background:#f8fafc; border:1px solid var(--border-color); border-radius:8px; padding:16px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <div style="font-weight:700; font-size:0.95rem; color:var(--text-main);">
-                        <i class="fa-solid fa-user-pen" style="color:var(--primary);margin-right:6px;"></i> 1. Petugas Pemeriksa Lapangan
-                    </div>
-                    <span class="badge badge-submitted" style="font-size:0.7rem; padding:3px 8px;">Wajib TTD</span>
+        <div style="background:#f8fafc; border:1px solid var(--border-color); border-radius:8px; padding:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div style="font-weight:700; font-size:0.95rem; color:var(--text-main);">
+                    <i class="fa-solid fa-signature" style="color:var(--primary);margin-right:6px;"></i> Tanda Tangan Petugas Pemeriksa
                 </div>
-
-                <?php if (!empty($edit_header['ttd_petugas'])): ?>
-                    <div style="margin-bottom:10px; padding:8px 10px; background:#fff; border-radius:6px; border:1px solid var(--border-color); display:flex; align-items:center; gap:10px;">
-                        <img src="<?= htmlspecialchars($edit_header['ttd_petugas']) ?>" style="max-height:42px; border:1px solid #cbd5e1; border-radius:4px; padding:2px;">
-                        <div style="font-size:0.75rem; color:var(--text-muted);">
-                            <strong style="color:var(--text-main);">TTD Petugas tersimpan.</strong><br>
-                            Tanda tangani ulang jika ingin mengganti.
-                        </div>
-                    </div>
-                <?php else: ?>
-                    <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;">
-                        Tanda tangan digital pemeriksa lapangan:
-                    </p>
-                <?php endif; ?>
-
-                <div class="signature-wrapper">
-                    <canvas class="signature-canvas" id="canvasPetugas"></canvas>
-                </div>
-                <div class="signature-actions" style="margin-bottom:12px;">
-                    <button type="button" id="clearPetugas" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:4px 10px;">
-                        <i class="fa-solid fa-eraser"></i> Hapus Ulang
-                    </button>
-                </div>
-                <input type="hidden" name="ttd_petugas" id="ttdPetugas">
-
-                <div style="display:flex; flex-direction:column; gap:10px; border-top:1px dashed var(--border-color); padding-top:12px;">
-                    <div>
-                        <label for="nama_petugas_ttd" style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-main);margin-bottom:4px;">
-                            Nama Petugas Pemeriksa <span style="color:var(--danger);font-weight:bold;">*</span>
-                        </label>
-                        <input type="text"
-                               id="nama_petugas_ttd"
-                               name="nama_pelaksana_1"
-                               class="form-control"
-                               placeholder="Nama lengkap petugas pemeriksa"
-                               value="<?= htmlspecialchars(
-                                   isset($edit_header['nama_pelaksana_1']) && !empty($edit_header['nama_pelaksana_1'])
-                                       ? $edit_header['nama_pelaksana_1']
-                                       : ($user ? $user['nama_lengkap'] : '')
-                               ) ?>"
-                               style="font-size:0.875rem;"
-                               required>
-                    </div>
-                    <div>
-                        <label for="jabatan_petugas_ttd" style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-main);margin-bottom:4px;">
-                            Jabatan Petugas Pemeriksa <span style="color:var(--danger);font-weight:bold;">*</span>
-                        </label>
-                        <input type="text"
-                               id="jabatan_petugas_ttd"
-                               name="jabatan_petugas"
-                               class="form-control"
-                               placeholder="Contoh: Petugas Lapangan / Pelaksana Yandal"
-                               value="<?= htmlspecialchars(
-                                   isset($edit_header['jabatan_petugas']) && !empty($edit_header['jabatan_petugas'])
-                                       ? $edit_header['jabatan_petugas']
-                                       : ($user ? $user['jabatan'] : '')
-                               ) ?>"
-                               style="font-size:0.875rem;"
-                               required>
-                    </div>
-                </div>
+                <span class="badge" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-size:0.7rem; padding:3px 8px;">
+                    TTD Digital / Offline
+                </span>
             </div>
 
-            <?php $is_tl_manajemen = ($user && $user['role'] === 'manajemen'); ?>
-
-            <!-- ================= 2. TEAM LEADER / MANAJEMEN (VERIFIKASI) ================= -->
-            <div style="background:#f8fafc; border:1px solid var(--border-color); border-radius:8px; padding:16px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <div style="font-weight:700; font-size:0.95rem; color:var(--text-main);">
-                        <i class="fa-solid fa-user-check" style="color:#0284c7;margin-right:6px;"></i> 2. Team Leader / Manajemen
+            <?php if (!empty($edit_header['ttd_petugas'])): ?>
+                <div style="margin-bottom:10px; padding:8px 10px; background:#fff; border-radius:6px; border:1px solid var(--border-color); display:flex; align-items:center; gap:10px;">
+                    <img src="<?= htmlspecialchars($edit_header['ttd_petugas']) ?>" style="max-height:42px; border:1px solid #cbd5e1; border-radius:4px; padding:2px;">
+                    <div style="font-size:0.75rem; color:var(--text-muted);">
+                        <strong style="color:var(--text-main);">TTD Petugas tersimpan.</strong>
                     </div>
-                    <?php if ($is_tl_manajemen): ?>
-                        <span class="badge badge-submitted" style="font-size:0.7rem; padding:3px 8px;">
-                            <i class="fa-solid fa-pen-nib"></i> Akun TL Aktif
-                        </span>
-                    <?php else: ?>
-                        <span class="badge" style="background:#fee2e2; color:#991b1b; border:1px solid #fecaca; font-size:0.7rem; padding:3px 8px;">
-                            <i class="fa-solid fa-lock"></i> Terkunci untuk Petugas
-                        </span>
-                    <?php endif; ?>
                 </div>
+            <?php endif; ?>
 
-                <?php if ($is_tl_manajemen): ?>
-                    <!-- KONTEN JIKA DIBUKA OLEH AKUN TL / MANAJEMEN -->
-                    <?php if (!empty($edit_header['ttd_manajemen'])): ?>
-                        <div style="margin-bottom:10px; padding:8px 10px; background:#fff; border-radius:6px; border:1px solid var(--border-color); display:flex; align-items:center; gap:10px;">
-                            <img src="<?= htmlspecialchars($edit_header['ttd_manajemen']) ?>" style="max-height:42px; border:1px solid #cbd5e1; border-radius:4px; padding:2px;">
-                            <div style="font-size:0.75rem; color:var(--text-muted);">
-                                <strong style="color:var(--text-main);">TTD TL tersimpan.</strong><br>
-                                Tanda tangani ulang jika ingin memperbarui.
-                            </div>
-                        </div>
-                    <?php else: ?>
-                        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;">
-                            Silakan tanda tangani verifikasi hasil pemeriksaan gelar alat:
-                        </p>
-                    <?php endif; ?>
-
-                    <div class="signature-wrapper">
-                        <canvas class="signature-canvas" id="canvasManager"></canvas>
-                    </div>
-                    <div class="signature-actions" style="margin-bottom:12px;">
-                        <button type="button" id="clearManager" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:4px 10px;">
-                            <i class="fa-solid fa-eraser"></i> Hapus Ulang
-                        </button>
-                    </div>
-                    <input type="hidden" name="ttd_manajemen" id="ttdManajemen" value="<?= htmlspecialchars($edit_header['ttd_manajemen'] ?? '') ?>">
-
-                    <div style="display:flex; flex-direction:column; gap:10px; border-top:1px dashed var(--border-color); padding-top:12px;">
-                        <div>
-                            <label for="nama_tl_ttd" style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-main);margin-bottom:4px;">
-                                Nama Team Leader / Pengawas
-                            </label>
-                            <input type="text"
-                                   id="nama_tl_ttd"
-                                   name="nama_pejabat_manajemen"
-                                   class="form-control"
-                                   placeholder="Nama Team Leader..."
-                                   value="<?= htmlspecialchars(
-                                       isset($edit_header['nama_pejabat_manajemen']) && !empty($edit_header['nama_pejabat_manajemen'])
-                                           ? $edit_header['nama_pejabat_manajemen']
-                                           : ($user['nama_lengkap'] ?? '')
-                                   ) ?>"
-                                   style="font-size:0.875rem;">
-                        </div>
-                        <div>
-                            <label for="jabatan_tl_ttd" style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-main);margin-bottom:4px;">
-                                Jabatan Team Leader / Pengawas
-                            </label>
-                            <input type="text"
-                                   id="jabatan_tl_ttd"
-                                   name="jabatan_manajemen"
-                                   class="form-control"
-                                   placeholder="Contoh: Team Leader K3L & Kam / TL Teknik"
-                                   value="<?= htmlspecialchars(
-                                       isset($edit_header['jabatan_manajemen']) && !empty($edit_header['jabatan_manajemen'])
-                                           ? $edit_header['jabatan_manajemen']
-                                           : ($user['jabatan'] ?? '')
-                                   ) ?>"
-                                   style="font-size:0.875rem;">
-                        </div>
-                    </div>
-
-                <?php else: ?>
-                    <!-- KONTEN JIKA DIBUKA DARI AKUN PETUGAS (TIDAK BISA DIISI / TERKUNCI) -->
-                    <div style="min-height:140px; border:2px dashed #cbd5e1; border-radius:6px; background:#f1f5f9; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#64748b; text-align:center; padding:16px; margin-bottom:12px;">
-                        <div style="width:40px; height:40px; border-radius:50%; background:#e2e8f0; display:flex; align-items:center; justify-content:center; margin-bottom:8px;">
-                            <i class="fa-solid fa-lock" style="font-size:1.2rem; color:#64748b;"></i>
-                        </div>
-                        <div style="font-weight:700; font-size:0.85rem; color:#334155;">Tidak Dapat Diisi Petugas</div>
-                        <div style="font-size:0.75rem; color:#64748b; margin-top:4px; max-width:260px; line-height:1.35;">
-                            Bagian ini hanya dapat ditandatangani saat dibuka dari <strong>Akun Team Leader atau Manajemen</strong>.
-                        </div>
-                    </div>
-                    <!-- Simpan nilai yang sudah ada sebelumnya jika mode edit -->
-                    <input type="hidden" name="ttd_manajemen" id="ttdManajemen" value="<?= htmlspecialchars($edit_header['ttd_manajemen'] ?? '') ?>">
-
-                    <div style="display:flex; flex-direction:column; gap:10px; border-top:1px dashed var(--border-color); padding-top:12px;">
-                        <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-muted);margin-bottom:4px;">
-                                Nama Team Leader / Pengawas <span style="font-weight:normal;font-size:0.725rem;">(Diisi oleh TL)</span>
-                            </label>
-                            <input type="text"
-                                   name="nama_pejabat_manajemen"
-                                   class="form-control"
-                                   placeholder="Otomatis diisi saat disetujui Team Leader"
-                                   value="<?= htmlspecialchars($edit_header['nama_pejabat_manajemen'] ?? '') ?>"
-                                   style="font-size:0.875rem; background:#f1f5f9; cursor:not-allowed;"
-                                   readonly>
-                        </div>
-                        <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-muted);margin-bottom:4px;">
-                                Jabatan Team Leader / Pengawas <span style="font-weight:normal;font-size:0.725rem;">(Diisi oleh TL)</span>
-                            </label>
-                            <input type="text"
-                                   name="jabatan_manajemen"
-                                   class="form-control"
-                                   placeholder="Otomatis diisi saat disetujui Team Leader"
-                                   value="<?= htmlspecialchars($edit_header['jabatan_manajemen'] ?? '') ?>"
-                                   style="font-size:0.875rem; background:#f1f5f9; cursor:not-allowed;"
-                                   readonly>
-                        </div>
-                    </div>
-                <?php endif; ?>
+            <div class="signature-wrapper">
+                <canvas class="signature-canvas" id="canvasPetugas"></canvas>
             </div>
+            <div class="signature-actions" style="margin-bottom:12px;">
+                <button type="button" id="clearPetugas" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:4px 10px;">
+                    <i class="fa-solid fa-eraser"></i> Hapus Ulang
+                </button>
+                <small style="color:var(--text-muted);font-size:0.725rem;margin-left:6px;">(Opsional, tanda tangan dan verifikasi TL/Manager dilakukan fisik pada cetak Berita Acara)</small>
+            </div>
+            <input type="hidden" name="ttd_petugas" id="ttdPetugas">
 
-            <!-- ================= 3. MANAGER UNIT / ULP (PENGESAHAN - WAJIB DIISI) ================= -->
-            <div style="background:#f8fafc; border:1px solid var(--border-color); border-radius:8px; padding:16px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <div style="font-weight:700; font-size:0.95rem; color:var(--text-main);">
-                        <i class="fa-solid fa-user-tie" style="color:#10b981;margin-right:6px;"></i> 3. Manager Unit / ULP
-                    </div>
-                    <span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #86efac; font-size:0.7rem; padding:3px 8px;">
-                        <i class="fa-solid fa-circle-check"></i> Wajib Diisi &bull; TTD Offline
-                    </span>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:12px; border-top:1px dashed var(--border-color); padding-top:12px;">
+                <div>
+                    <label for="nama_petugas_ttd" style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-main);margin-bottom:4px;">
+                        Nama Petugas Pemeriksa <span style="color:var(--danger);font-weight:bold;">*</span>
+                    </label>
+                    <input type="text"
+                           id="nama_petugas_ttd"
+                           name="nama_pelaksana_1"
+                           class="form-control"
+                           placeholder="Nama lengkap petugas pemeriksa"
+                           value="<?= htmlspecialchars(
+                               isset($edit_header['nama_pelaksana_1']) && !empty($edit_header['nama_pelaksana_1'])
+                                   ? $edit_header['nama_pelaksana_1']
+                                   : ($user ? $user['nama_lengkap'] : '')
+                           ) ?>"
+                           style="font-size:0.875rem;"
+                           required>
                 </div>
-
-                <div style="padding:10px 12px; background:#fff; border-radius:6px; border:1px solid var(--border-color); margin-bottom:12px; font-size:0.8rem; color:var(--text-muted); line-height:1.35;">
-                    <i class="fa-solid fa-circle-info" style="color:#0284c7; margin-right:4px;"></i>
-                    Nama & Jabatan Manager <strong>wajib diisi</strong> untuk dicetak pada Berita Acara. Tanda tangan Manager dimintakan secara fisik/offline.
-                </div>
-
-                <div style="display:flex; flex-direction:column; gap:10px;">
-                    <div>
-                        <label for="nama_manager_input" style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-main);margin-bottom:4px;">
-                            Nama Manager ULP / Unit <span style="color:var(--danger);font-weight:bold;">*</span>
-                        </label>
-                        <input type="text"
-                               id="nama_manager_input"
-                               name="nama_manager"
-                               class="form-control"
-                               placeholder="Masukkan nama lengkap Manager..."
-                               value="<?= htmlspecialchars(
-                                   isset($edit_header['nama_manager']) && !empty($edit_header['nama_manager'])
-                                       ? $edit_header['nama_manager']
-                                       : 'Manager ULP'
-                               ) ?>"
-                               style="font-size:0.875rem;"
-                               required>
-                        <small style="color:var(--text-muted);font-size:0.75rem;display:block;margin-top:4px;">Nama ini akan tercetak pada kolom pengesahan berita acara.</small>
-                    </div>
-                    <div>
-                        <label for="jabatan_manager_input" style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-main);margin-bottom:4px;">
-                            Jabatan Manager <span style="color:var(--danger);font-weight:bold;">*</span>
-                        </label>
-                        <input type="text"
-                               id="jabatan_manager_input"
-                               name="jabatan_manager"
-                               class="form-control"
-                               placeholder="Contoh: Manager Unit Layanan Pelanggan"
-                               value="<?= htmlspecialchars(
-                                   isset($edit_header['jabatan_manager']) && !empty($edit_header['jabatan_manager'])
-                                       ? $edit_header['jabatan_manager']
-                                       : 'Manager ULP'
-                               ) ?>"
-                               style="font-size:0.875rem;"
-                               required>
-                    </div>
+                <div>
+                    <label for="jabatan_petugas_ttd" style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-main);margin-bottom:4px;">
+                        Jabatan Petugas Pemeriksa <span style="color:var(--danger);font-weight:bold;">*</span>
+                    </label>
+                    <input type="text"
+                           id="jabatan_petugas_ttd"
+                           name="jabatan_petugas"
+                           class="form-control"
+                           placeholder="Contoh: Petugas Lapangan / Pelaksana Yandal"
+                           value="<?= htmlspecialchars(
+                               isset($edit_header['jabatan_petugas']) && !empty($edit_header['jabatan_petugas'])
+                                   ? $edit_header['jabatan_petugas']
+                                   : ($user ? $user['jabatan'] : 'Pelaksana Lapangan')
+                           ) ?>"
+                           style="font-size:0.875rem;"
+                           required>
                 </div>
             </div>
         </div>
@@ -815,7 +606,7 @@ require_once __DIR__ . '/../includes/header.php';
                         <i class="fa-regular fa-floppy-disk"></i> Simpan Draft
                     </button>
                     <button type="button" onclick="kirimForm('submit')" id="btnSubmit" class="btn btn-primary btn-lg">
-                        <i class="fa-solid fa-paper-plane"></i> <?= ($edit_header && $edit_header['status'] === 'rejected') ? 'Kirim Ulang Revisi ke Manajemen' : 'Submit ke Manajemen' ?>
+                        <i class="fa-solid fa-check-double"></i> <?= ($edit_header) ? 'Simpan Perubahan Laporan' : 'Simpan & Siap Cetak' ?>
                     </button>
                 </div>
             </div>
@@ -838,13 +629,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const hiddenInput = document.getElementById('ttdPetugas');
     window.sigPad = new SimpleSignaturePad(canvas, clearBtn, hiddenInput);
 
-    // Inisialisasi TTD Manager (Opsional)
-    const canvasMgr = document.getElementById('canvasManager');
-    const clearBtnMgr = document.getElementById('clearManager');
-    const hiddenInputMgr = document.getElementById('ttdManajemen');
-    if (canvasMgr && clearBtnMgr && hiddenInputMgr) {
-        window.sigPadManager = new SimpleSignaturePad(canvasMgr, clearBtnMgr, hiddenInputMgr);
-    }
+
 
     // ========================================
     // Cek & Tampilkan Autosave Draft Lokal
@@ -1140,33 +925,18 @@ function kirimForm(action) {
     const hasExistingTtd = <?= (!empty($edit_header['ttd_petugas'])) ? 'true' : 'false' ?>;
 
     if (action === 'submit') {
-        if ((!window.sigPad || window.sigPad.isEmpty()) && !hasExistingTtd) {
-            alert('Tanda tangan digital Petugas Pemeriksa belum diisi.\nSilakan tanda tangan pada kolom canvas yang tersedia.');
-            return;
-        }
         if (window.sigPad && !window.sigPad.isEmpty()) {
             window.sigPad.updateInput();
         }
-        // Simpan TTD TL/Manajemen jika diisi oleh akun manajemen
-        if (window.sigPadManager && !window.sigPadManager.isEmpty()) {
-            window.sigPadManager.updateInput();
-        }
 
-        // Validasi wajib Nama & Jabatan Manager
-        const namaMgrInput = document.getElementById('nama_manager_input');
-        const jabMgrInput = document.getElementById('jabatan_manager_input');
-        if (namaMgrInput && !namaMgrInput.value.trim()) {
-            alert('Nama Manager ULP / Unit wajib diisi.');
-            namaMgrInput.focus();
-            return;
-        }
-        if (jabMgrInput && !jabMgrInput.value.trim()) {
-            alert('Jabatan Manager wajib diisi.');
-            jabMgrInput.focus();
+        const namaPetugas = document.getElementById('nama_petugas_ttd');
+        if (namaPetugas && !namaPetugas.value.trim()) {
+            alert('Nama Petugas Pemeriksa wajib diisi.');
+            namaPetugas.focus();
             return;
         }
 
-        if (!confirm('Apakah Anda yakin data hasil pemeriksaan sudah benar dan siap dikirimkan ke Manajemen Atasan?')) {
+        if (!confirm('Apakah Anda yakin data checklist pemeriksaan sudah lengkap dan siap disimpan / dicetak?')) {
             return;
         }
     }

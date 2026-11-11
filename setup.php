@@ -63,7 +63,7 @@ try {
     $pdo->exec($schema_sql);
     output_msg("Skema tabel berhasil diverifikasi dan dibuat.", 'success');
 
-    // 5. Seed Users (2 Role: Petugas & Manajemen Atasan)
+    // 5. Seed Users (Role: Petugas Lapangan)
     $password_default = password_hash('123456', PASSWORD_BCRYPT);
     $users = [
         // Role: Petugas Pemeriksa & User Publik Lapangan
@@ -73,11 +73,7 @@ try {
         ['username' => 'petugas_har', 'nama_lengkap' => 'Ahmad Fauzi (Pelaksana HAR)', 'role' => 'petugas', 'jabatan' => 'Pelaksana Pemeliharaan Distribusi', 'no_hp' => '081234567893'],
         ['username' => 'petugas_sr', 'nama_lengkap' => 'Budi Santoso (Pelaksana SR APP)', 'role' => 'petugas', 'jabatan' => 'Pelaksana Penyambungan SR APP 1 Phasa', 'no_hp' => '081234567894'],
         
-        // Role: Manajemen Atasan
-        ['username' => 'manager_balong', 'nama_lengkap' => 'Yusuf Irfan', 'role' => 'manajemen', 'jabatan' => 'Manager ULP Balong', 'no_hp' => '081234567800'],
-        ['username' => 'spv_yantek', 'nama_lengkap' => 'A. Kholid', 'role' => 'manajemen', 'jabatan' => 'SPV Yantek ULP Balong', 'no_hp' => '081234567801'],
-        ['username' => 'tl_k3', 'nama_lengkap' => 'Bindraerda Hanindiawan', 'role' => 'manajemen', 'jabatan' => 'TL K3L dan KAM ULP Balong', 'no_hp' => '081234567802'],
-        ['username' => 'tl_teknik', 'nama_lengkap' => 'Sofyan', 'role' => 'manajemen', 'jabatan' => 'TL Teknik ULP Balong', 'no_hp' => '081234567803'],
+
     ];
 
     $stmt_user = $pdo->prepare("INSERT INTO users (username, password_hash, nama_lengkap, role, jabatan, no_hp) 
@@ -94,14 +90,14 @@ try {
             ':no_hp' => $u['no_hp']
         ]);
     }
-    output_msg("Seeder Data Users berhasil dibuat (" . count($users) . " akun terdaftar: Petugas & Manajemen Atasan). Password default: <code>123456</code>", 'success');
+    output_msg("Seeder Data Users berhasil dibuat (" . count($users) . " akun terdaftar: Petugas Lapangan). Password default: <code>123456</code>", 'success');
 
     // 6. Seed Regu & Armada
     $regus = [
         ['nama_regu' => 'Regu 2 P2TL Citacontrac', 'jenis_pekerjaan' => 'p2tl', 'regu_tipe' => 'all', 'kendaraan' => 'Mobil Operasional Citacontrac', 'nopol' => 'AE 1234 CC', 'keterangan' => 'Penertiban Pemakaian Tenaga Listrik'],
         ['nama_regu' => 'Regu Roda 3 SR APP Balong', 'jenis_pekerjaan' => 'sr_app', 'regu_tipe' => 'roda_3', 'kendaraan' => 'Kendaraan Roda Tiga Listrik', 'nopol' => 'AE 8123 R3', 'keterangan' => 'Penyambungan & Bongkar SR APP 1 Phasa Roda 3'],
-        ['nama_regu' => 'Regu Roda 2 SR APP Balong', 'jenis_pekerjaan' => 'sr_app', 'regu_tipe' => 'roda_2', 'kendaraan' => 'Kendaraan Roda Dua', 'nopol' => 'AE 4567 R2', 'keterangan' => 'Penyambungan & Bongkar SR APP 1 Phasa Roda 2'],
-        ['nama_regu' => 'Mobil Yandal Hilux Rangga', 'jenis_pekerjaan' => 'yandal', 'regu_tipe' => 'yandal_mobil', 'kendaraan' => 'Hilux Rangga', 'nopol' => 'AE 8297 BH', 'keterangan' => 'Pelayanan Gangguan Distribusi 24 Jam'],
+        ['nama_regu' => 'Regu Roda 2 SR APP Balong', 'jenis_pekerjaan' => 'sr_app', 'regu_tipe' => 'roda_2', 'kendaraan' => 'Kendaraan Roda Dua', 'keterangan' => 'Penyambungan & Bongkar SR APP 1 Phasa Roda 2'],
+        ['nama_regu' => 'Mobil Yandal Hilux Rangga', 'jenis_pekerjaan' => 'yandal', 'regu_tipe' => 'yandal_mobil', 'kendaraan' => 'Hilux Rangga', 'keterangan' => 'Pelayanan Gangguan Distribusi 24 Jam'],
         ['nama_regu' => 'Regu ULC Sepeda Motor', 'jenis_pekerjaan' => 'yandal', 'regu_tipe' => 'ulc_motor', 'kendaraan' => 'Honda Verza', 'nopol' => 'E 2225 CG', 'keterangan' => 'Unit Layanan Cepat Gangguan'],
         ['nama_regu' => 'Regu HAR A Truk Hino', 'jenis_pekerjaan' => 'har', 'regu_tipe' => 'har_truk', 'kendaraan' => 'Truk Hino', 'nopol' => 'AE 8280 BH', 'keterangan' => 'Pemeliharaan Preventif & Korektif Jaringan'],
         ['nama_regu' => 'Regu HAR B Mobil Carry', 'jenis_pekerjaan' => 'har', 'regu_tipe' => 'har_carry', 'kendaraan' => 'Suzuki Carry', 'nopol' => 'E 8255 BH', 'keterangan' => 'Pemeliharaan Gardu & JTR'],
@@ -481,7 +477,7 @@ try {
     echo "<p>Anda sekarang dapat langsung membuka sistem SIGAP dan login:</p>";
     echo "<ul>";
     echo "<li><strong>Role Petugas Pemeriksa:</strong> username <code>petugas_yandal</code> / pass <code>123456</code></li>";
-    echo "<li><strong>Role Manajemen Atasan:</strong> username <code>manager_balong</code> / pass <code>123456</code></li>";
+    echo "";
     echo "</ul>";
     echo "<a href='index.php' class='btn'>Buka Aplikasi Sekarang &rarr;</a>";
 

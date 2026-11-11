@@ -30,11 +30,7 @@ if (!$header) {
     header("Location: " . base_url('inspeksi/index.php')); exit;
 }
 
-// Hanya jika user terautentikasi sebagai petugas lain yang dibatasi
-if ($user && $user['role'] === 'petugas' && $header['petugas_id'] != $user['id']) {
-    set_flash('error', "Akses ditolak. Anda hanya dapat melihat laporan milik Anda sendiri.");
-    header("Location: " . base_url('inspeksi/index.php')); exit;
-}
+// Akses terbuka untuk seluruh petugas lapangan dan tim kerja
 
 $stmt_d = $pdo->prepare("SELECT * FROM gelar_alat_detail WHERE gelar_alat_id = :id ORDER BY kategori_snapshot, id");
 $stmt_d->execute([':id' => $id]);
@@ -84,25 +80,12 @@ require_once __DIR__ . '/../includes/header.php';
         <p style="color:var(--text-muted);font-size:0.875rem;"><?= htmlspecialchars(isset($header['nomor_dokumen']) ? $header['nomor_dokumen'] : 'Draft') ?> &mdash; <?= date('d F Y', strtotime($header['tanggal_inspeksi'])) ?></p>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <?php if ($user && $user['role'] === 'manajemen' && $header['status'] === 'submitted'): ?>
-            <a href="<?= base_url('approval/review.php?id=' . $id) ?>" class="btn btn-primary">
-                <i class="fa-solid fa-signature"></i> Review & Berikan Persetujuan
-            </a>
-        <?php endif; ?>
-        <?php if ((!$user || $user['role'] === 'petugas') && in_array($header['status'], ['rejected', 'draft'])): ?>
-            <a href="<?= base_url('inspeksi/form.php?edit_id=' . $id) ?>" class="btn btn-warning">
-                <i class="fa-solid fa-pen-to-square"></i> <?= $header['status'] === 'rejected' ? 'Revisi / Perbaiki Laporan Ini' : 'Lanjutkan Isi Draft' ?>
-            </a>
-        <?php endif; ?>
-        <?php if ($header['status'] === 'approved'): ?>
-            <a href="<?= base_url('cetak/berita_acara.php?id=' . $id) ?>" target="_blank" class="btn btn-success">
-                <i class="fa-solid fa-print"></i> Cetak Berita Acara Resmi (PDF)
-            </a>
-        <?php elseif ($header['status'] === 'submitted'): ?>
-            <a href="<?= base_url('cetak/berita_acara.php?id=' . $id) ?>" target="_blank" class="btn btn-outline" style="background:#fff;" title="Cetak dokumen fisik untuk dimintakan pengesahan / tanda tangan basah secara offline">
-                <i class="fa-solid fa-print"></i> Cetak Dokumen (Untuk TTD Offline)
-            </a>
-        <?php endif; ?>
+        <a href="<?= base_url('cetak/berita_acara.php?id=' . $id) ?>" target="_blank" class="btn btn-success" title="Cetak dokumen fisik untuk dimintakan pengesahan / tanda tangan basah secara offline">
+            <i class="fa-solid fa-print"></i> Cetak Berita Acara Resmi (TTD Offline)
+        </a>
+        <a href="<?= base_url('inspeksi/form.php?edit_id=' . $id) ?>" class="btn btn-outline" style="background:#fff;">
+            <i class="fa-solid fa-pen-to-square"></i> Edit / Revisi Data
+        </a>
     </div>
 </div>
 
@@ -153,7 +136,7 @@ require_once __DIR__ . '/../includes/header.php';
             </table>
         </div>
         <div>
-            <h3 style="font-size:0.875rem;text-transform:uppercase;font-weight:700;color:var(--text-muted);margin-bottom:10px;">Petugas & Pengesahan</h3>
+            <h3 style="font-size:0.875rem;text-transform:uppercase;font-weight:700;color:var(--text-muted);margin-bottom:10px;">Petugas Pemeriksa</h3>
             <table style="font-size:0.875rem;width:100%;">
                 <tr><td style="color:var(--text-muted);width:120px;padding:4px 0;">Pelaksana 1</td><td><strong><?= htmlspecialchars($header['nama_pelaksana_1']) ?></strong></td></tr>
                 <?php if ($header['nama_pelaksana_2']): ?>
@@ -166,34 +149,14 @@ require_once __DIR__ . '/../includes/header.php';
                     </td></tr>
                 <?php endif; ?>
                 <tr><td style="color:var(--text-muted);padding:4px 0;">Status</td><td><span class="badge badge-<?= $header['status'] ?>"><?= strtoupper($header['status']) ?></span></td></tr>
-                <?php if ($header['nama_pejabat_manajemen']): ?>
-                    <tr><td style="color:var(--text-muted);padding:4px 0;">Verifikator (TL)</td><td><strong><?= htmlspecialchars($header['nama_pejabat_manajemen']) ?></strong> (<?= htmlspecialchars($header['jabatan_manajemen'] ?? 'Team Leader') ?>)</td></tr>
-                    <?php if (!empty($header['ttd_manajemen'])): ?>
-                        <tr><td style="color:var(--text-muted);padding:4px 0;vertical-align:top;">TTD TL</td><td>
-                            <img src="<?= htmlspecialchars($header['ttd_manajemen']) ?>" style="max-height:42px;max-width:130px;border:1px solid #cbd5e1;border-radius:4px;background:#fff;padding:2px;display:block;margin-top:2px;">
-                        </td></tr>
-                    <?php endif; ?>
-                <?php endif; ?>
-                <tr><td style="color:var(--text-muted);padding:4px 0;">Pengesahan (Manager)</td><td><strong><?= htmlspecialchars(!empty($header['nama_manager']) ? $header['nama_manager'] : 'Manager ULP') ?></strong></td></tr>
-                <?php if (!empty($header['ttd_manager'])): ?>
-                    <tr><td style="color:var(--text-muted);padding:4px 0;vertical-align:top;">TTD Manager</td><td>
-                        <img src="<?= htmlspecialchars($header['ttd_manager']) ?>" style="max-height:42px;max-width:130px;border:1px solid #cbd5e1;border-radius:4px;background:#fff;padding:2px;display:block;margin-top:2px;">
-                    </td></tr>
-                <?php endif; ?>
-                <?php if (!empty($header['tanggal_approval'])): ?>
-                    <tr><td style="color:var(--text-muted);padding:4px 0;">Tgl Approval TL</td><td><?= date('d/m/Y H:i', strtotime($header['tanggal_approval'])) ?></td></tr>
-                <?php endif; ?>
+                <tr><td style="color:var(--text-muted);padding:4px 0;vertical-align:top;">Pengesahan</td><td>
+                    <span style="font-size:0.8rem; color:#0369a1; background:#e0f2fe; padding:3px 8px; border-radius:4px; display:inline-block;">
+                        <i class="fa-solid fa-print"></i> Verifikasi TL & Manager Fisik Offline
+                    </span>
+                </td></tr>
             </table>
         </div>
     </div>
-    <?php if ($header['catatan_manajemen'] && in_array($header['status'], ['approved', 'rejected'])): ?>
-        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border-color);">
-            <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Catatan Manajemen:</div>
-            <p style="font-size:0.875rem;padding:8px 12px;border-radius:6px;background:#f8fafc;border-left:3px solid <?= $header['status'] === 'approved' ? '#10b981' : '#ef4444' ?>;">
-                <?= nl2br(htmlspecialchars($header['catatan_manajemen'])) ?>
-            </p>
-        </div>
-    <?php endif; ?>
 </div>
 
 <!-- Tabel Detail -->
@@ -277,7 +240,7 @@ require_once __DIR__ . '/../includes/header.php';
                                             <span class="badge badge-rejected" style="font-size:0.68rem;">
                                                 Belum Selesai
                                             </span>
-                                            <?php if ($user['role'] === 'manajemen'): ?>
+                                            <?php if ($user): ?>
                                                 <div style="margin-top:4px;">
                                                     <button type="button" class="btn btn-sm btn-outline" style="font-size:0.7rem; padding:2px 8px;" onclick="showDoneModal(<?= $d['id'] ?>, '<?= addslashes(htmlspecialchars($d['nama_barang_snapshot'])) ?>')">
                                                         <i class="fa-solid fa-check"></i> Tindak Lanjut
@@ -298,7 +261,7 @@ require_once __DIR__ . '/../includes/header.php';
     <?php endforeach; ?>
 </div>
 
-<?php if ($user && $user['role'] === 'manajemen'): ?>
+<?php if ($user): ?>
 <!-- Modal Selesai Diperbaiki -->
 <div id="doneModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,0.6); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); align-items:center; justify-content:center;">
     <div style="background:#ffffff; border-radius:var(--radius-xl); padding:2rem; max-width:440px; width:90%; box-shadow:var(--shadow-xl);">

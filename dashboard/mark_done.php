@@ -6,7 +6,7 @@
  */
 require_once __DIR__ . '/../includes/auth_check.php';
 require_once __DIR__ . '/../includes/upload_helper.php';
-require_role('manajemen');
+require_login();
 
 header('Content-Type: application/json; charset=utf-8');
 

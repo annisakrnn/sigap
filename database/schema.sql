@@ -24,14 +24,14 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- =============================================================================
 -- 1. TABEL USERS
---    Role: 'petugas' (pemeriksa lapangan) & 'manajemen' (atasan approver)
+--    Role: 'petugas' (Petugas Pelaksana Lapangan - TTD & Verifikasi Offline)
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS users (
     id            INT           AUTO_INCREMENT PRIMARY KEY,
     username      VARCHAR(50)   NOT NULL UNIQUE,
     password_hash VARCHAR(255)  NOT NULL,
     nama_lengkap  VARCHAR(100)  NOT NULL,
-    role          ENUM('petugas', 'manajemen') NOT NULL,
+    role          ENUM('petugas') NOT NULL DEFAULT 'petugas',
     jabatan       VARCHAR(100)  NOT NULL,
     no_hp         VARCHAR(20)   NULL,
     created_at    TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
@@ -196,11 +196,7 @@ INSERT INTO users (id, username, password_hash, nama_lengkap, role, jabatan, no_
 (2, 'petugas_yandal', '$2y$10$AcrLpOpLY85Ezl4bKAryPeGFmQf9KABwmOwzBNKBYQLz4URRFO4Pi', 'Ropiko (Pelaksana Yandal)', 'petugas', 'Petugas Pelaksana Yandal ULP Balong', '081234567891'),
 (3, 'petugas_p2tl', '$2y$10$AcrLpOpLY85Ezl4bKAryPeGFmQf9KABwmOwzBNKBYQLz4URRFO4Pi', 'Sayitno (Pelaksana P2TL)', 'petugas', 'Pelaksana Lapangan PT Citacontrac', '081234567892'),
 (4, 'petugas_har', '$2y$10$AcrLpOpLY85Ezl4bKAryPeGFmQf9KABwmOwzBNKBYQLz4URRFO4Pi', 'Ahmad Fauzi (Pelaksana HAR)', 'petugas', 'Pelaksana Pemeliharaan Distribusi', '081234567893'),
-(5, 'petugas_sr', '$2y$10$AcrLpOpLY85Ezl4bKAryPeGFmQf9KABwmOwzBNKBYQLz4URRFO4Pi', 'Budi Santoso (Pelaksana SR APP)', 'petugas', 'Pelaksana Penyambungan SR APP 1 Phasa', '081234567894'),
-(6, 'manager_balong', '$2y$10$AcrLpOpLY85Ezl4bKAryPeGFmQf9KABwmOwzBNKBYQLz4URRFO4Pi', 'Yusuf Irfan', 'manajemen', 'Manager ULP Balong', '081234567800'),
-(7, 'spv_yantek', '$2y$10$AcrLpOpLY85Ezl4bKAryPeGFmQf9KABwmOwzBNKBYQLz4URRFO4Pi', 'A. Kholid', 'manajemen', 'SPV Yantek ULP Balong', '081234567801'),
-(8, 'tl_k3', '$2y$10$AcrLpOpLY85Ezl4bKAryPeGFmQf9KABwmOwzBNKBYQLz4URRFO4Pi', 'Bindraerda Hanindiawan', 'manajemen', 'TL K3L dan KAM ULP Balong', '081234567802'),
-(9, 'tl_teknik', '$2y$10$AcrLpOpLY85Ezl4bKAryPeGFmQf9KABwmOwzBNKBYQLz4URRFO4Pi', 'Sofyan', 'manajemen', 'TL Teknik ULP Balong', '081234567803')
+(5, 'petugas_sr', '$2y$10$AcrLpOpLY85Ezl4bKAryPeGFmQf9KABwmOwzBNKBYQLz4URRFO4Pi', 'Budi Santoso (Pelaksana SR APP)', 'petugas', 'Pelaksana Penyambungan SR APP 1 Phasa', '081234567894')
 ON DUPLICATE KEY UPDATE
     nama_lengkap = VALUES(nama_lengkap),
     role         = VALUES(role),

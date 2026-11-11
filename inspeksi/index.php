@@ -149,7 +149,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <label class="form-label" style="font-size:0.8rem;">Pilih Regu:</label>
                     <select name="regu_id" class="form-control" required style="font-size: 0.85rem;">
                         <?php foreach ((isset($regu_by_jenis['yandal']) ? $regu_by_jenis['yandal'] : []) as $r): ?>
-                            <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['nama_regu']) ?> (<?= htmlspecialchars(isset($r['nopol']) ? $r['nopol'] : '-') ?>)</option>
+                            <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['nama_regu']) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -183,7 +183,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <label class="form-label" style="font-size:0.8rem;">Pilih Regu:</label>
                     <select name="regu_id" class="form-control" required style="font-size: 0.85rem;">
                         <?php foreach ((isset($regu_by_jenis['har']) ? $regu_by_jenis['har'] : []) as $r): ?>
-                            <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['nama_regu']) ?> (<?= htmlspecialchars(isset($r['nopol']) ? $r['nopol'] : '-') ?>)</option>
+                            <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['nama_regu']) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>

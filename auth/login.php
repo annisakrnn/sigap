@@ -11,14 +11,9 @@ if (!$pdo) {
     $db_error = true;
 }
 
-// Jika sudah login, redirect sesuai role
+// Jika sudah login, langsung ke formulir inspeksi
 if (is_logged_in()) {
-    $user = get_logged_user();
-    if ($user['role'] === 'manajemen') {
-        header("Location: " . base_url('dashboard/index.php'));
-    } else {
-        header("Location: " . base_url('inspeksi/index.php'));
-    }
+    header("Location: " . base_url('inspeksi/index.php'));
     exit;
 }
 
@@ -51,11 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             set_flash('success', "Selamat datang kembali, <strong>" . htmlspecialchars($user['nama_lengkap']) . "</strong>!");
             
-            if ($user['role'] === 'manajemen') {
-                header("Location: " . base_url('dashboard/index.php'));
-            } else {
-                header("Location: " . base_url('inspeksi/index.php'));
-            }
+            header("Location: " . base_url('inspeksi/index.php'));
             exit;
         } else {
             $error_msg = "Username atau password yang Anda masukkan tidak sesuai.";
@@ -79,12 +70,8 @@ if (isset($_GET['demo']) && $pdo) {
         $_SESSION['jabatan']      = $user['jabatan'];
         $_SESSION['no_hp']        = $user['no_hp'];
 
-        set_flash('success', "Login Demo Berhasil sebagai <strong>" . htmlspecialchars($user['nama_lengkap']) . "</strong> (" . ($user['role'] === 'manajemen' ? 'Manajemen Atasan' : 'Petugas') . ")");
-        if ($user['role'] === 'manajemen') {
-            header("Location: " . base_url('dashboard/index.php'));
-        } else {
-            header("Location: " . base_url('inspeksi/index.php'));
-        }
+        set_flash('success', "Login Berhasil sebagai <strong>" . htmlspecialchars($user['nama_lengkap']) . "</strong> (Petugas Lapangan)");
+        header("Location: " . base_url('inspeksi/index.php'));
         exit;
     }
 }
@@ -207,7 +194,7 @@ if (isset($_GET['demo']) && $pdo) {
         <?= csrf_field() ?>
         <div class="form-group">
             <label class="form-label" for="username">Username</label>
-            <input type="text" id="username" name="username" class="form-control" placeholder="Contoh: petugas_yandal / manager_balong" required autofocus>
+            <input type="text" id="username" name="username" class="form-control" placeholder="Contoh: petugas_yandal / petugas_lapangan" required autofocus>
         </div>
 
         <div class="form-group">

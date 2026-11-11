@@ -85,9 +85,9 @@ require_once __DIR__ . '/../includes/header.php';
             <label class="form-label" style="font-size:0.8rem;">Status Laporan</label>
             <select name="status" class="form-control" style="font-size:0.85rem; padding:6px 12px; min-width:140px;">
                 <option value="">Semua Status</option>
-                <option value="submitted" <?= $filter_status === 'submitted' ? 'selected' : '' ?>>Menunggu Approval</option>
-                <option value="approved" <?= $filter_status === 'approved' ? 'selected' : '' ?>>Sudah Disetujui</option>
-                <option value="rejected" <?= $filter_status === 'rejected' ? 'selected' : '' ?>>Dikembalikan</option>
+                <option value="submitted" <?= $filter_status === 'submitted' ? 'selected' : '' ?>>Siap Cetak (Submitted)</option>
+                <option value="approved" <?= $filter_status === 'approved' ? 'selected' : '' ?>>Disahkan</option>
+                <option value="rejected" <?= $filter_status === 'rejected' ? 'selected' : '' ?>>Perlu Revisi</option>
                 <option value="draft" <?= $filter_status === 'draft' ? 'selected' : '' ?>>Draft</option>
             </select>
         </div>
@@ -220,28 +220,20 @@ require_once __DIR__ . '/../includes/header.php';
                             </td>
                             <td style="text-align:center; white-space:nowrap;">
                                 <div style="display:inline-flex; gap:6px;">
-                                    <?php if ($user && $user['role'] === 'manajemen' && $row['status'] === 'submitted'): ?>
-                                        <a href="<?= base_url('approval/review.php?id=' . $row['id']) ?>" class="btn btn-primary btn-sm">
-                                            <i class="fa-solid fa-signature"></i> Review
-                                        </a>
-                                    <?php elseif (in_array($row['status'], ['rejected', 'draft'])): ?>
+                                    <?php if (in_array($row['status'], ['rejected', 'draft'])): ?>
                                         <a href="<?= base_url('inspeksi/form.php?edit_id=' . $row['id']) ?>" class="btn btn-warning btn-sm" title="Revisi / Edit Data">
                                             <i class="fa-solid fa-pen-to-square"></i> <?= $row['status'] === 'rejected' ? 'Revisi' : 'Lanjut' ?>
                                         </a>
                                     <?php endif; ?>
-                                    <?php if ($user && ($user['role'] === 'manajemen' || $row['petugas_id'] == $user['id'])): ?>
-                                        <a href="<?= base_url('riwayat/hapus.php?id=' . $row['id']) ?>" class="btn btn-danger btn-sm" onclick="return confirm('Apakah Anda yakin ingin menghapus dokumen ini secara permanen?');" title="Hapus Dokumen">
-                                            <i class="fa-solid fa-trash"></i>
-                                        </a>
-                                    <?php endif; ?>
-                                    <a href="<?= base_url('riwayat/detail.php?id=' . $row['id']) ?>" class="btn btn-outline btn-sm">
+                                    <a href="<?= base_url('riwayat/detail.php?id=' . $row['id']) ?>" class="btn btn-outline btn-sm" title="Lihat Detail">
                                         <i class="fa-solid fa-eye"></i> Detail
                                     </a>
-                                    <?php if ($row['status'] === 'approved'): ?>
-                                        <a href="<?= base_url('cetak/berita_acara.php?id=' . $row['id']) ?>" target="_blank" class="btn btn-outline btn-sm" title="Cetak Berita Acara PDF">
-                                            <i class="fa-solid fa-print"></i>
-                                        </a>
-                                    <?php endif; ?>
+                                    <a href="<?= base_url('cetak/berita_acara.php?id=' . $row['id']) ?>" target="_blank" class="btn btn-outline btn-sm" style="background:#f0fdf4; color:#15803d; border-color:#bbf7d0;" title="Cetak Berita Acara (TTD Offline)">
+                                        <i class="fa-solid fa-print"></i>
+                                    </a>
+                                    <a href="<?= base_url('riwayat/hapus.php?id=' . $row['id']) ?>" class="btn btn-danger btn-sm" onclick="return confirm('Apakah Anda yakin ingin menghapus dokumen ini secara permanen?');" title="Hapus Dokumen">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
                                 </div>
                             </td>
                         </tr>
