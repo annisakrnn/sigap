@@ -247,18 +247,18 @@ require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <!-- Header & Toolbar -->
-<div class="dash-header-wrap">
+<div class="dash-header-wrap" style="align-items:center;">
     <div>
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-            <span class="badge" style="background:linear-gradient(135deg, #0072ce 0%, #0284c7 100%); color:#ffffff; font-weight:700; font-size:0.75rem; padding:3px 10px; border-radius:20px;">
-                <i class="fa-solid fa-chart-line"></i> Analitik Operasional & K3
+            <span class="badge" style="background:linear-gradient(135deg, #0072ce 0%, #0284c7 100%); color:#ffffff; font-weight:700; font-size:0.725rem; padding:2px 9px; border-radius:20px;">
+                <i class="fa-solid fa-chart-line"></i> Analitik Operasional &amp; K3
             </span>
-            <span style="font-size:0.8rem; color:var(--text-muted);">&bull; Monitoring Kelaikan Alat & Perlengkapan</span>
+            <span style="font-size:0.785rem; color:var(--text-muted);">&bull; Monitoring Kelaikan Alat &amp; Perlengkapan</span>
         </div>
-        <h1 style="font-size:1.65rem; font-weight:800; letter-spacing:-0.02em; margin-bottom:4px; color:var(--text-main);">
-            Dashboard Rekapitulasi & Analitik K3
+        <h1 style="font-size:1.5rem; font-weight:800; letter-spacing:-0.02em; margin-bottom:2px; color:var(--text-main);">
+            Dashboard Rekapitulasi &amp; Analitik K3
         </h1>
-        <p style="color:var(--text-muted); font-size:0.88rem; margin:0;">
+        <p style="color:var(--text-muted); font-size:0.825rem; margin:0;">
             Selamat datang, <strong><?= htmlspecialchars($user['nama_lengkap']) ?></strong> &mdash; <?= htmlspecialchars($user['jabatan']) ?>
         </p>
     </div>
@@ -266,7 +266,7 @@ require_once __DIR__ . '/../includes/header.php';
     <!-- Filter Periode & Action Toolbar -->
     <div class="dash-action-toolbar no-print">
         <form method="GET" action="" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            <div style="display:flex; align-items:center; background:#ffffff; border:1px solid var(--border-color); border-radius:var(--radius-md); padding:4px 8px; box-shadow:var(--shadow-sm);">
+            <div style="display:flex; align-items:center; background:#ffffff; border:1px solid var(--border-color); border-radius:var(--radius-md); padding:5px 10px; box-shadow:var(--shadow-xs);">
                 <i class="fa-solid fa-filter" style="color:var(--text-muted); font-size:0.8rem; margin-right:6px;"></i>
                 <select name="periode" class="form-select-sm" onchange="toggleBulanInput(this.value); this.form.submit();" style="border:none; outline:none; font-size:0.825rem; font-weight:600; color:var(--text-main); background:transparent; cursor:pointer;">
                     <option value="semua" <?= $filter_periode === 'semua' ? 'selected' : '' ?>>Semua Data (Rekap Global)</option>
@@ -300,41 +300,48 @@ $alat_rusak_aktif = intval($rekap_global['alat_rusak_aktif']);
             <i class="fa-solid fa-triangle-exclamation"></i>
         </div>
         <div style="flex:1; min-width:0;">
-            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:4px;">
-                <span class="badge" style="background:#dc2626; color:#ffffff; font-weight:700; font-size:0.75rem; letter-spacing:0.02em;">
-                    🚨 NOTIFIKASI MENDESAK K3
-                </span>
-                <span style="font-weight:700; font-size:0.95rem; color:#991b1b;">
-                    Terdeteksi <?= $total_unresolved ?> Item Rusak / Perlu Penggantian yang Belum Diselesaikan!
-                </span>
-            </div>
-            <p style="margin:0 0 6px 0; font-size:0.85rem; color:#7f1d1d; line-height:1.45;">
-                Data checklist masuk mengindikasikan adanya alat pelindung diri atau perkakas kerja yang rusak. Kondisi ini dapat menurunkan standar keselamatan kerja dan memerlukan tindakan pengadaan atau perbaikan segera oleh manajemen.
-            </p>
-            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                <?php if ($k3_rusak_aktif > 0): ?>
-                    <span class="badge badge-rejected" style="font-size:0.75rem; padding:4px 9px;">
-                        <i class="fa-solid fa-shield-halved"></i> <strong><?= $k3_rusak_aktif ?> APD K3 Rusak</strong> (Prioritas Utama)
-                    </span>
-                <?php endif; ?>
-                <?php if ($alat_rusak_aktif > 0): ?>
-                    <span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a; font-size:0.75rem; padding:4px 9px;">
-                        <i class="fa-solid fa-wrench"></i> <strong><?= $alat_rusak_aktif ?> Perkakas Kerja Rusak</strong>
-                    </span>
-                <?php endif; ?>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                <div>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span class="badge" style="background:#dc2626; color:#ffffff; font-weight:700; font-size:0.7rem; letter-spacing:0.03em; padding:2px 8px;">
+                            PERHATIAN K3
+                        </span>
+                        <strong style="font-size:0.925rem; color:#991b1b;">
+                            Terdeteksi <?= $total_unresolved ?> Item Rusak / Perlu Penggantian yang Belum Selesai!
+                        </strong>
+                    </div>
+                    <p style="margin:3px 0 0 0; font-size:0.8rem; color:#7f1d1d; line-height:1.45;">
+                        Data checklist masuk mengindikasikan adanya alat pelindung diri atau perkakas kerja yang rusak. Kondisi ini memerlukan perbaikan atau pengadaan unit baru segera.
+                    </p>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <?php if ($k3_rusak_aktif > 0): ?>
+                        <span class="badge badge-rejected" style="font-size:0.72rem; padding:3px 8px;">
+                            <i class="fa-solid fa-shield-halved"></i> <strong><?= $k3_rusak_aktif ?> APD Rusak</strong>
+                        </span>
+                    <?php endif; ?>
+                    <?php if ($alat_rusak_aktif > 0): ?>
+                        <span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a; font-size:0.72rem; padding:3px 8px;">
+                            <i class="fa-solid fa-wrench"></i> <strong><?= $alat_rusak_aktif ?> Perkakas Rusak</strong>
+                        </span>
+                    <?php endif; ?>
+                    <a href="#sectionPeralatanRusak" class="btn btn-sm" style="background:#dc2626; color:#ffffff; font-size:0.75rem; font-weight:700; padding:5px 12px; border-radius:6px; box-shadow:0 2px 4px rgba(220,38,38,0.25); text-decoration:none;">
+                        <i class="fa-solid fa-arrow-down"></i> Tindak Lanjut
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 <?php else: ?>
     <div class="alert-k3-safe">
-        <div style="width:40px; height:40px; border-radius:50%; background:#dcfce7; color:#16a34a; display:flex; align-items:center; justify-content:center; font-size:1.25rem; flex-shrink:0;">
+        <div style="width:36px; height:36px; border-radius:50%; background:#dcfce7; color:#16a34a; display:flex; align-items:center; justify-content:center; font-size:1.15rem; flex-shrink:0;">
             <i class="fa-solid fa-circle-check"></i>
         </div>
         <div style="flex:1;">
-            <div style="font-weight:700; color:#166534; font-size:0.925rem;">
-                Kondisi Perlengkapan K3 & Perkakas Prima
+            <div style="font-weight:700; color:#166534; font-size:0.9rem;">
+                Kondisi Perlengkapan K3 &amp; Perkakas Prima
             </div>
-            <div style="font-size:0.825rem; color:#15803d; margin-top:2px;">
+            <div style="font-size:0.8rem; color:#15803d; margin-top:2px;">
                 Seluruh data checklist yang masuk berada dalam kondisi laik pakai. Tidak ada temuan kerusakan alat yang tertunda.
             </div>
         </div>
@@ -349,7 +356,7 @@ $alat_rusak_aktif = intval($rekap_global['alat_rusak_aktif']);
     <div class="readiness-card">
         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div>
-                <span class="readiness-title">Indeks Kelaikan Aset Global</span>
+                <span class="readiness-title">Indeks Kelaikan Global</span>
                 <div class="readiness-value" style="color:<?= $pct_laik_global >= 90 ? '#16a34a' : ($pct_laik_global >= 75 ? '#d97706' : '#dc2626') ?>;">
                     <?= $pct_laik_global ?>%
                 </div>
@@ -362,7 +369,7 @@ $alat_rusak_aktif = intval($rekap_global['alat_rusak_aktif']);
             <div class="progress-bar-fill" style="width:<?= min(max($pct_laik_global, 0), 100) ?>%; background:<?= $pct_laik_global >= 90 ? '#16a34a' : ($pct_laik_global >= 75 ? '#d97706' : '#dc2626') ?>;"></div>
         </div>
         <div class="readiness-meta">
-            <span><strong><?= $rekap_global['total_baik'] ?></strong> Laik dari <strong><?= $rekap_global['total_item'] ?></strong> item terperiksa</span>
+            <span><strong><?= $rekap_global['total_baik'] ?></strong> Laik dari <strong><?= $rekap_global['total_item'] ?></strong> item</span>
         </div>
     </div>
 
@@ -370,7 +377,7 @@ $alat_rusak_aktif = intval($rekap_global['alat_rusak_aktif']);
     <div class="readiness-card">
         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div>
-                <span class="readiness-title">Kelaikan APD & Safety K3</span>
+                <span class="readiness-title">Kelaikan APD (Safety K3)</span>
                 <div class="readiness-value" style="color:<?= $pct_laik_k3 >= 90 ? '#16a34a' : ($pct_laik_k3 >= 75 ? '#d97706' : '#dc2626') ?>;">
                     <?= $pct_laik_k3 ?>%
                 </div>
@@ -385,11 +392,11 @@ $alat_rusak_aktif = intval($rekap_global['alat_rusak_aktif']);
         <div class="readiness-meta">
             <span>
                 <?php if ($k3_rusak_aktif > 0): ?>
-                    <strong style="color:#dc2626;"><?= $k3_rusak_aktif ?> APD butuh pengadaan</strong>
+                    <strong style="color:#dc2626;"><?= $k3_rusak_aktif ?> APD butuh ganti</strong>
                 <?php else: ?>
-                    <span style="color:#16a34a;"><i class="fa-solid fa-check"></i> 100% Siap Operasi</span>
+                    <span style="color:#16a34a;"><i class="fa-solid fa-check"></i> 100% Siap</span>
                 <?php endif; ?>
-                &bull; Total <?= $rekap_global['total_k3'] ?> item K3
+                &bull; Total <?= $rekap_global['total_k3'] ?> item
             </span>
         </div>
     </div>
@@ -413,11 +420,11 @@ $alat_rusak_aktif = intval($rekap_global['alat_rusak_aktif']);
         <div class="readiness-meta">
             <span>
                 <?php if ($alat_rusak_aktif > 0): ?>
-                    <strong style="color:#b45309;"><?= $alat_rusak_aktif ?> perkakas perlu servis/ganti</strong>
+                    <strong style="color:#b45309;"><?= $alat_rusak_aktif ?> perkakas rusak</strong>
                 <?php else: ?>
                     <span style="color:#16a34a;"><i class="fa-solid fa-check"></i> Kondisi Baik</span>
                 <?php endif; ?>
-                &bull; Total <?= $rekap_global['total_alat'] ?> perkakas
+                &bull; Total <?= $rekap_global['total_alat'] ?> item
             </span>
         </div>
     </div>
@@ -426,89 +433,260 @@ $alat_rusak_aktif = intval($rekap_global['alat_rusak_aktif']);
     <div class="readiness-card" style="border-left:4px solid <?= $total_unresolved > 0 ? '#dc2626' : '#16a34a' ?>;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div>
-                <span class="readiness-title">Kebutuhan Pengadaan & Servis</span>
+                <span class="readiness-title">Kebutuhan Servis / Ganti</span>
                 <div class="readiness-value" style="color:<?= $total_unresolved > 0 ? '#dc2626' : '#16a34a' ?>;">
-                    <?= $total_unresolved ?> <span style="font-size:0.95rem; font-weight:500; color:var(--text-muted);">item</span>
+                    <?= $total_unresolved ?> <span style="font-size:0.9rem; font-weight:600; color:var(--text-muted);">item</span>
                 </div>
             </div>
             <div class="readiness-icon" style="background:<?= $total_unresolved > 0 ? '#fee2e2' : '#f0fdf4' ?>; color:<?= $total_unresolved > 0 ? '#dc2626' : '#16a34a' ?>;">
                 <i class="fa-solid fa-cart-flatbed"></i>
             </div>
         </div>
-        <div class="readiness-meta" style="margin-top:4px;">
-            <span>Menunggu pengadaan / penggantian</span>
+        <div class="readiness-meta" style="margin-top:12px;">
+            <span style="color:<?= $total_unresolved > 0 ? '#b91c1c' : '#16a34a' ?>; font-weight:600;">
+                <?= $total_unresolved > 0 ? 'Menunggu perbaikan/pengadaan' : 'Semua kebutuhan terpenuhi' ?>
+            </span>
         </div>
     </div>
 </div>
 
 <!-- ========================================================================= -->
-<!-- GRAFIK KELAYAKAN ALAT (VISUAL ANALYTICS)                                  -->
+<!-- GRAFIK KELAYAKAN ALAT (VISUAL ANALYTICS BERSIH & LEGA)                     -->
 <!-- ========================================================================= -->
-<div class="charts-grid">
+<div class="charts-grid-top">
     <!-- Chart 1: Donut Distribusi Kondisi Aset -->
     <div class="card chart-card">
-        <div class="card-header" style="padding-bottom:8px;">
+        <div class="card-header" style="padding-bottom:10px;">
             <div>
-                <h2 class="card-title" style="font-size:1.05rem;">
+                <h2 class="card-title" style="font-size:0.95rem;">
                     <i class="fa-solid fa-chart-pie" style="color:var(--primary);"></i> Proporsi Status Kondisi Aset
                 </h2>
                 <span style="font-size:0.75rem; color:var(--text-muted);">Persentase kelaikan seluruh perlengkapan checklist</span>
             </div>
         </div>
-        <div style="position:relative; height:240px; display:flex; align-items:center; justify-content:center;">
+        <div style="position:relative; height:220px; display:flex; align-items:center; justify-content:center;">
             <canvas id="chartKondisiDonut"></canvas>
         </div>
         <div style="display:flex; justify-content:space-around; padding-top:12px; border-top:1px solid var(--border-light); margin-top:8px;">
             <div style="text-align:center;">
-                <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#16a34a; margin-right:4px;"></span>
-                <span style="font-size:0.78rem; font-weight:600; color:var(--text-main);">Baik / Laik</span>
-                <div style="font-size:0.9rem; font-weight:700; color:#16a34a;"><?= $rekap_global['total_baik'] ?></div>
+                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#16a34a; margin-right:4px;"></span>
+                <span style="font-size:0.75rem; font-weight:600; color:var(--text-muted);">Baik</span>
+                <div style="font-size:0.95rem; font-weight:800; color:#16a34a;"><?= $rekap_global['total_baik'] ?></div>
             </div>
             <div style="text-align:center;">
-                <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#eab308; margin-right:4px;"></span>
-                <span style="font-size:0.78rem; font-weight:600; color:var(--text-main);">Waktu Ganti</span>
-                <div style="font-size:0.9rem; font-weight:700; color:#ca8a04;"><?= $rekap_global['total_waktu_ganti'] ?></div>
+                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#eab308; margin-right:4px;"></span>
+                <span style="font-size:0.75rem; font-weight:600; color:var(--text-muted);">Waktu Ganti</span>
+                <div style="font-size:0.95rem; font-weight:800; color:#ca8a04;"><?= $rekap_global['total_waktu_ganti'] ?></div>
             </div>
             <div style="text-align:center;">
-                <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#dc2626; margin-right:4px;"></span>
-                <span style="font-size:0.78rem; font-weight:600; color:var(--text-main);">Rusak / Hilang</span>
-                <div style="font-size:0.9rem; font-weight:700; color:#dc2626;"><?= $rekap_global['total_rusak'] ?></div>
+                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#dc2626; margin-right:4px;"></span>
+                <span style="font-size:0.75rem; font-weight:600; color:var(--text-muted);">Rusak / Hilang</span>
+                <div style="font-size:0.95rem; font-weight:800; color:#dc2626;"><?= $rekap_global['total_rusak'] ?></div>
             </div>
         </div>
     </div>
 
     <!-- Chart 2: Bar Chart Kelaikan per Kategori Aset -->
     <div class="card chart-card">
-        <div class="card-header" style="padding-bottom:8px;">
+        <div class="card-header" style="padding-bottom:10px;">
             <div>
-                <h2 class="card-title" style="font-size:1.05rem;">
+                <h2 class="card-title" style="font-size:0.95rem;">
                     <i class="fa-solid fa-layer-group" style="color:var(--primary);"></i> Kelaikan per Kategori Aset
                 </h2>
                 <span style="font-size:0.75rem; color:var(--text-muted);">Perbandingan item Baik vs Rusak / Waktu Ganti</span>
             </div>
         </div>
-        <div style="position:relative; height:280px;">
+        <div style="position:relative; height:260px;">
             <canvas id="chartKategoriBar"></canvas>
-        </div>
-    </div>
-
-    <!-- Chart 3: Bar Chart Kelaikan per Jenis Pekerjaan -->
-    <div class="card chart-card">
-        <div class="card-header" style="padding-bottom:8px;">
-            <div>
-                <h2 class="card-title" style="font-size:1.05rem;">
-                    <i class="fa-solid fa-users-gear" style="color:var(--primary);"></i> Kelaikan per Jenis Pekerjaan
-                </h2>
-                <span style="font-size:0.75rem; color:var(--text-muted);">Tingkat kesiapan perlengkapan di masing-masing regu</span>
-            </div>
-        </div>
-        <div style="position:relative; height:280px;">
-            <canvas id="chartJenisPekerjaanBar"></canvas>
         </div>
     </div>
 </div>
 
-<!-- [REMOVED: Rekapitulasi Kebutuhan Pengadaan, Laporan Siap Cetak, Alert Temuan, Dokumen Checklist] -->
+<!-- Chart 3: Bar Chart Kelaikan per Jenis Pekerjaan (Full Width Lega) -->
+<div class="card chart-card" style="margin-bottom:1.5rem;">
+    <div class="card-header" style="padding-bottom:10px;">
+        <div>
+            <h2 class="card-title" style="font-size:0.95rem;">
+                <i class="fa-solid fa-users-gear" style="color:var(--primary);"></i> Kelaikan per Jenis Pekerjaan Regu
+            </h2>
+            <span style="font-size:0.75rem; color:var(--text-muted);">Tingkat kesiapan perlengkapan di masing-masing jenis pekerjaan lapangan</span>
+        </div>
+    </div>
+    <div style="position:relative; height:240px;">
+        <canvas id="chartJenisPekerjaanBar"></canvas>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- DAFTAR MONITORING PERALATAN RUSAK & TINDAK LANJUT PERBAIKAN               -->
+<!-- ========================================================================= -->
+<?php
+$rusak_unresolved_count = 0;
+foreach ($red_flags as $rf) {
+    if (!$rf['sudah_diperbaiki']) $rusak_unresolved_count++;
+}
+?>
+<div class="card" id="sectionPeralatanRusak" style="margin-bottom:1.5rem;">
+    <div class="card-header" style="flex-wrap:wrap; gap:12px; align-items:center;">
+        <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <h2 class="card-title">
+                    <i class="fa-solid fa-triangle-exclamation" style="color:#dc2626;"></i> Monitoring Peralatan Rusak &amp; Tindak Lanjut Perbaikan
+                </h2>
+                <?php if ($rusak_unresolved_count > 0): ?>
+                    <span class="badge" style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca; font-weight:700; animation:pulseAlert 2s infinite;">
+                        <i class="fa-solid fa-circle-exclamation"></i> <?= $rusak_unresolved_count ?> Perlu Segera Diperbaiki!
+                    </span>
+                <?php else: ?>
+                    <span class="badge badge-approved" style="font-size:0.75rem;">
+                        <i class="fa-solid fa-circle-check"></i> Seluruh Alat Siap / Baik
+                    </span>
+                <?php endif; ?>
+            </div>
+            <span style="font-size:0.78rem; color:var(--text-muted); margin-top:2px; display:block;">
+                Daftar peralatan kerja dan APD yang dilaporkan rusak / waktu ganti beserta kontrol status perbaikan
+            </span>
+        </div>
+
+        <!-- Filter Tabs & Quick Search -->
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <div style="display:flex; gap:4px; background:#f1f5f9; padding:3px; border-radius:8px;">
+                <button type="button" class="btn btn-sm procure-tab active" id="tabRfAll" onclick="filterRusakStatus('all')">
+                    Semua (<?= count($red_flags) ?>)
+                </button>
+                <button type="button" class="btn btn-sm procure-tab" id="tabRfPending" onclick="filterRusakStatus('pending')">
+                    <span style="color:#b91c1c; font-weight:700;">● Belum Diperbaiki (<?= $rusak_unresolved_count ?>)</span>
+                </button>
+                <button type="button" class="btn btn-sm procure-tab" id="tabRfDone" onclick="filterRusakStatus('done')">
+                    <span style="color:#15803d; font-weight:600;">✓ Sudah Diperbaiki (<?= count($red_flags) - $rusak_unresolved_count ?>)</span>
+                </button>
+            </div>
+            <div style="position:relative;">
+                <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.75rem;"></i>
+                <input type="text" id="searchRusakInput" oninput="searchRusakTable()" placeholder="Cari alat / regu..." class="form-control" style="padding-left:28px; font-size:0.8rem; height:32px; width:180px;">
+            </div>
+        </div>
+    </div>
+
+    <?php if (empty($red_flags)): ?>
+        <div style="text-align:center; padding:3rem 1rem; color:var(--text-muted);">
+            <div style="width:54px; height:54px; border-radius:50%; background:#f0fdf4; color:#16a34a; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; font-size:1.5rem;">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <strong style="color:var(--text-main); font-size:0.95rem;">Kondisi Aman &amp; Baik</strong>
+            <p style="font-size:0.825rem; margin-top:2px;">Seluruh peralatan kerja dan APD yang dilaporkan saat ini berada dalam kondisi siap pakai.</p>
+        </div>
+    <?php else: ?>
+        <div class="table-responsive">
+            <table class="data-table" id="tableRusak">
+                <thead>
+                    <tr>
+                        <th style="width:40px; text-align:center;">#</th>
+                        <th>Nama Alat / Perlengkapan</th>
+                        <th>Regu &amp; Tanggal Gelar</th>
+                        <th>Kondisi Temuan</th>
+                        <th>Status Perbaikan</th>
+                        <th style="text-align:center;">Ubah Status / Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    $no = 1;
+                    foreach ($red_flags as $rf): 
+                        $is_done = !empty($rf['sudah_diperbaiki']);
+                        $is_rusak = ($rf['kondisi'] === 'rusak');
+                        $search_text = strtolower($rf['nama_barang_snapshot'] . ' ' . $rf['nama_regu'] . ' ' . (isset($rf['keterangan']) ? $rf['keterangan'] : ''));
+                    ?>
+                        <tr class="row-rusak" 
+                            id="rf-<?= $rf['detail_id'] ?>"
+                            data-status="<?= $is_done ? 'done' : 'pending' ?>"
+                            data-search="<?= htmlspecialchars($search_text) ?>"
+                            style="<?= !$is_done ? 'background:#fffbfb;' : '' ?>">
+                            <td style="text-align:center; font-weight:600; color:var(--text-muted);"><?= $no++ ?></td>
+                            <td>
+                                <div style="font-weight:700; color:var(--text-main); font-size:0.885rem;">
+                                    <?= htmlspecialchars($rf['nama_barang_snapshot']) ?>
+                                </div>
+                                <?php if (!empty($rf['keterangan'])): ?>
+                                    <div style="font-size:0.775rem; color:var(--text-muted); margin-top:2px; font-style:italic;">
+                                        &ldquo;<?= htmlspecialchars($rf['keterangan']) ?>&rdquo;
+                                    </div>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <div style="font-weight:600; color:var(--text-main); font-size:0.85rem;">
+                                    <?= htmlspecialchars($rf['nama_regu']) ?>
+                                </div>
+                                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
+                                    <span class="badge" style="background:#e2e8f0; color:#475569; font-size:0.65rem; padding:1px 5px;">
+                                        <?= strtoupper($rf['jenis_pekerjaan']) ?>
+                                    </span>
+                                    &bull; <?= date('d/m/Y', strtotime($rf['tanggal_inspeksi'])) ?>
+                                </div>
+                            </td>
+                            <td>
+                                <?php if ($is_rusak): ?>
+                                    <span class="badge" style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca; font-weight:700; font-size:0.75rem;">
+                                        <i class="fa-solid fa-triangle-exclamation"></i> RUSAK
+                                    </span>
+                                <?php else: ?>
+                                    <span class="badge" style="background:#fffbeb; color:#d97706; border:1px solid #fde68a; font-weight:700; font-size:0.75rem;">
+                                        <i class="fa-solid fa-clock-rotate-left"></i> WAKTU GANTI
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($is_done): ?>
+                                    <span class="badge" style="background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; font-weight:700; font-size:0.75rem;">
+                                        <i class="fa-solid fa-circle-check"></i> Sudah Diperbaiki
+                                    </span>
+                                    <?php if (!empty($rf['tgl_diperbaiki'])): ?>
+                                        <div style="font-size:0.72rem; color:var(--text-muted); margin-top:3px;">
+                                            <?= date('d/m/Y H:i', strtotime($rf['tgl_diperbaiki'])) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if (!empty($rf['catatan_perbaikan'])): ?>
+                                        <div style="font-size:0.72rem; color:#15803d; margin-top:1px;">
+                                            Catatan: <?= htmlspecialchars($rf['catatan_perbaikan']) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <span class="badge" style="background:#fef2f2; color:#dc2626; border:1px solid #f87171; font-weight:700; font-size:0.75rem;">
+                                        <i class="fa-solid fa-triangle-exclamation"></i> Belum Diperbaiki
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            <td style="text-align:center; white-space:nowrap;">
+                                <div style="display:inline-flex; gap:8px; align-items:center; justify-content:center;">
+                                    <?php if (!$is_done): ?>
+                                        <button type="button" 
+                                            onclick="showDoneModal(<?= $rf['detail_id'] ?>, '<?= addslashes(htmlspecialchars($rf['nama_barang_snapshot'])) ?>')"
+                                            class="btn btn-sm btn-success" 
+                                            style="padding:4px 10px; font-size:0.75rem; font-weight:700;"
+                                            title="Tandai Sudah Diperbaiki">
+                                            <i class="fa-solid fa-check"></i> Tandai Diperbaiki
+                                        </button>
+                                    <?php else: ?>
+                                        <button type="button" 
+                                            onclick="toggleBelum(<?= $rf['detail_id'] ?>)" 
+                                            class="btn btn-sm btn-outline" 
+                                            style="padding:4px 8px; font-size:0.75rem; color:#dc2626; border-color:#fecaca;"
+                                            title="Ubah kembali status ke Belum Diperbaiki">
+                                            <i class="fa-solid fa-rotate-left"></i> Set Belum
+                                        </button>
+                                    <?php endif; ?>
+                                    <a href="<?= base_url('riwayat/detail.php?id=' . $rf['header_id']) ?>" class="btn-icon btn-icon-detail" title="Lihat Dokumen Pemeriksaan">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</div>
 
 <!-- ========================================================================= -->
 <!-- MODAL KONFIRMASI SELESAI DIPERBAIKI / DIGANTI                             -->
@@ -678,14 +856,14 @@ $alat_rusak_aktif = intval($rekap_global['alat_rusak_aktif']);
 }
 
 /* Charts Grid */
-.charts-grid {
+.charts-grid-top {
     display:grid;
-    grid-template-columns:1fr 1.35fr 1.35fr;
+    grid-template-columns:1fr 1.25fr;
     gap:1.25rem;
-    margin-bottom:1.5rem;
+    margin-bottom:1.25rem;
 }
 .chart-card {
-    padding:18px;
+    padding:16px 20px;
 }
 
 /* Procurement Table Tabs */
@@ -731,13 +909,13 @@ $alat_rusak_aktif = intval($rekap_global['alat_rusak_aktif']);
     body { background:#ffffff; color:#000000; font-size:11pt; }
     .main-content { margin-left:0 !important; padding:0 !important; }
     .card { box-shadow:none !important; border:1px solid #ccc !important; break-inside:avoid; }
-    .charts-grid { grid-template-columns:1fr 1fr; }
+    .charts-grid-top { grid-template-columns:1fr 1fr; }
 }
 
 /* Responsive */
 @media (max-width: 1024px) {
     .readiness-grid { grid-template-columns:repeat(2, 1fr); }
-    .charts-grid { grid-template-columns:1fr; }
+    .charts-grid-top { grid-template-columns:1fr; }
 }
 @media (max-width: 640px) {
     .readiness-grid { grid-template-columns:1fr; }
@@ -957,37 +1135,60 @@ function searchProcureTable() {
 }
 
 // ============================================================================
-// RED FLAG LIVE SEARCH & FILTER
+// MONITORING PERALATAN RUSAK - LIVE SEARCH & FILTER
 // ============================================================================
 let _doneDetailId = null;
-let _activeRfFilter = 'all';
+let _currentRusakFilter = 'all';
 
-function searchRfItems() {
-    const query = document.getElementById('searchRfInput').value.toLowerCase().trim();
-    applyRfFilters(query, _activeRfFilter);
+function filterRusakStatus(status) {
+    _currentRusakFilter = status;
+    document.querySelectorAll('.procure-tab').forEach(b => b.classList.remove('active'));
+    if (status === 'all') document.getElementById('tabRfAll')?.classList.add('active');
+    if (status === 'pending') document.getElementById('tabRfPending')?.classList.add('active');
+    if (status === 'done') document.getElementById('tabRfDone')?.classList.add('active');
+    applyRusakTableFilter();
 }
 
-function filterRfStatus(status) {
-    _activeRfFilter = status;
-    document.querySelectorAll('.rf-tab').forEach(b => b.classList.remove('active'));
-    if (status === 'all') document.getElementById('tabRfAll').classList.add('active');
-    if (status === 'pending') document.getElementById('tabRfPending').classList.add('active');
-    if (status === 'done') document.getElementById('tabRfDone').classList.add('active');
-
-    const query = document.getElementById('searchRfInput').value.toLowerCase().trim();
-    applyRfFilters(query, status);
+function searchRusakTable() {
+    applyRusakTableFilter();
 }
 
-function applyRfFilters(query, status) {
-    const items = document.querySelectorAll('#redFlagList .rf-item');
-    items.forEach(el => {
-        const itemStatus = el.dataset.status;
-        const itemSearch = el.dataset.search || '';
-        const matchStatus = (status === 'all' || itemStatus === status);
-        const matchQuery  = (!query || itemSearch.includes(query));
-
-        el.style.display = (matchStatus && matchQuery) ? 'flex' : 'none';
+function applyRusakTableFilter() {
+    const query = (document.getElementById('searchRusakInput')?.value || '').toLowerCase().trim();
+    const rows = document.querySelectorAll('#tableRusak .row-rusak');
+    rows.forEach(r => {
+        const status = r.dataset.status;
+        const search = r.dataset.search || '';
+        const matchStatus = (_currentRusakFilter === 'all' || status === _currentRusakFilter);
+        const matchQuery  = (!query || search.includes(query));
+        r.style.display = (matchStatus && matchQuery) ? '' : 'none';
     });
+}
+
+async function toggleBelum(detailId) {
+    if (!confirm('Apakah Anda yakin ingin mengubah status alat ini kembali menjadi BELUM DIPERBAIKI?')) return;
+    
+    const formData = new FormData();
+    formData.append('csrf_token', '<?= csrf_token() ?>');
+    formData.append('detail_id', detailId);
+    formData.append('status', 'pending');
+
+    try {
+        const resp = await fetch('<?= base_url('dashboard/mark_done.php') ?>', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const data = await resp.json();
+        if (data.ok) {
+            showToast('✅ ' + data.pesan, 'sukses');
+            setTimeout(() => { location.reload(); }, 600);
+        } else {
+            showToast('⚠ ' + data.pesan, 'peringatan');
+        }
+    } catch(e) {
+        showToast('❌ Gagal terhubung ke server.', 'error');
+    }
 }
 
 // Modal Done Handling
@@ -1054,32 +1255,8 @@ async function submitDone() {
 
         if (data.ok) {
             closeDoneModal();
-            // Update elemen di list feed
-            const item = document.getElementById('rf-' + _doneDetailId);
-            if (item) {
-                item.style.background = '#f0fdf4';
-                item.style.border = '1px solid #bbf7d0';
-                item.dataset.status = 'done';
-                const btnDone = item.querySelector('.btn-done-rf');
-                if (btnDone) {
-                    btnDone.parentElement.innerHTML =
-                        '<span class="badge" style="background:#dcfce7;color:#166534;border:1px solid #bbf7d0;"><i class="fa-solid fa-circle-check"></i> Selesai</span>';
-                }
-                item.classList.add('rf-done');
-
-                if (data.foto_perbaikan) {
-                    const infoDiv = item.children[1];
-                    if (infoDiv) {
-                        const linkEl = document.createElement('div');
-                        linkEl.style.cssText = 'margin-top:4px; font-size:0.75rem;';
-                        linkEl.innerHTML = `<a href="${data.foto_perbaikan}" target="_blank" style="color:#047857; text-decoration:underline; font-weight:600;"><i class="fa-solid fa-camera"></i> Bukti Foto</a>`;
-                        infoDiv.appendChild(linkEl);
-                    }
-                }
-            }
             showToast('✅ ' + data.pesan, 'sukses');
-            // Reload ringan setelah 1.5 detik agar counter dan grafik kelaikan terupdate
-            setTimeout(() => { location.reload(); }, 1200);
+            setTimeout(() => { location.reload(); }, 700);
         } else {
             showToast('⚠ ' + data.pesan, 'peringatan');
         }

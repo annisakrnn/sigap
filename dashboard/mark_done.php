@@ -60,6 +60,21 @@ try {
         exit;
     }
 
+    $action_type = isset($_POST['status']) && $_POST['status'] === 'pending' ? 'pending' : 'done';
+
+    if ($action_type === 'pending') {
+        $upd = $pdo->prepare("
+            UPDATE gelar_alat_detail
+            SET sudah_diperbaiki = 0,
+                tgl_diperbaiki   = NULL,
+                diperbaiki_oleh  = NULL
+            WHERE id = :id
+        ");
+        $upd->execute([':id' => $detail_id]);
+        echo json_encode(['ok' => true, 'pesan' => 'Status alat berhasil diubah menjadi Belum Diperbaiki.']);
+        exit;
+    }
+
     if ($detail['sudah_diperbaiki']) {
         echo json_encode(['ok' => false, 'pesan' => 'Temuan ini sudah ditandai selesai sebelumnya']);
         exit;
