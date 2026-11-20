@@ -55,12 +55,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nama_barang    = trim(isset($_POST['nama_barang']) ? $_POST['nama_barang'] : '');
         $kategori       = trim(isset($_POST['kategori']) ? $_POST['kategori'] : '');
         $satuan_default = trim(isset($_POST['satuan_default']) ? $_POST['satuan_default'] : 'Bh');
+        $hapus_foto     = !empty($_POST['hapus_foto']);
 
         if ($id <= 0 || empty($nama_barang) || empty($kategori) || empty($satuan_default)) {
             set_flash('error', 'Data tidak valid.');
         } else {
+            // Ambil data lama jika ada file gambar lama
+            $stmt_old = $pdo->prepare("SELECT gambar_referensi FROM master_barang WHERE id = :id");
+            $stmt_old->execute([':id' => $id]);
+            $old_gambar = $stmt_old->fetchColumn();
+
             $gambar_baru = $handle_upload('gambar_referensi');
             if ($gambar_baru) {
+                if ($old_gambar) {
+                    $old_path = __DIR__ . '/../../uploads/referensi/' . $old_gambar;
+                    if (file_exists($old_path)) @unlink($old_path);
+                }
                 $stmt = $pdo->prepare("UPDATE master_barang SET nama_barang = :nama, kategori = :kat, satuan_default = :sat, gambar_referensi = :gbr WHERE id = :id");
                 $stmt->execute([
                     ':id'   => $id,
@@ -68,6 +78,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ':kat'  => $kategori,
                     ':sat'  => $satuan_default,
                     ':gbr'  => $gambar_baru
+                ]);
+            } elseif ($hapus_foto) {
+                if ($old_gambar) {
+                    $old_path = __DIR__ . '/../../uploads/referensi/' . $old_gambar;
+                    if (file_exists($old_path)) @unlink($old_path);
+                }
+                $stmt = $pdo->prepare("UPDATE master_barang SET nama_barang = :nama, kategori = :kat, satuan_default = :sat, gambar_referensi = NULL WHERE id = :id");
+                $stmt->execute([
+                    ':id'   => $id,
+                    ':nama' => $nama_barang,
+                    ':kat'  => $kategori,
+                    ':sat'  => $satuan_default
                 ]);
             } else {
                 $stmt = $pdo->prepare("UPDATE master_barang SET nama_barang = :nama, kategori = :kat, satuan_default = :sat WHERE id = :id");
@@ -258,12 +280,12 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <?= $row['total_inspeksi'] ?> kali
                             </td>
                             <td style="text-align:center; white-space:nowrap;">
-                                <div style="display:inline-flex; gap:6px;">
-                                    <button onclick='openModalEdit(<?= json_encode($row) ?>)' class="btn btn-outline btn-sm" title="Edit Alat">
-                                        <i class="fa-solid fa-pen-to-square"></i> Edit
+                                <div style="display:inline-flex; gap:12px; align-items:center; justify-content:center;">
+                                    <button type="button" onclick='openModalEdit(<?= json_encode($row) ?>)' class="btn-icon btn-icon-edit" title="Edit Alat">
+                                        <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
-                                    <button onclick="confirmHapus(<?= $row['id'] ?>, '<?= addslashes(htmlspecialchars($row['nama_barang'])) ?>', <?= $row['total_inspeksi'] ?>)" class="btn btn-danger btn-sm" style="padding:4px 8px;" title="Hapus">
-                                        <i class="fa-solid fa-trash"></i>
+                                    <button type="button" onclick="confirmHapus(<?= $row['id'] ?>, '<?= addslashes(htmlspecialchars($row['nama_barang'])) ?>', <?= $row['total_inspeksi'] ?>)" class="btn-icon btn-icon-delete" title="Hapus Alat">
+                                        <i class="fa-solid fa-trash-can"></i>
                                     </button>
                                 </div>
                             </td>
@@ -313,9 +335,15 @@ require_once __DIR__ . '/../../includes/header.php';
             <div class="form-group">
                 <label class="form-label" for="gambarRef">Foto / Gambar Referensi Katalog <span style="font-weight:400; color:var(--text-muted);">(opsional)</span></label>
                 <input type="file" id="gambarRef" name="gambar_referensi" class="form-control" accept="image/jpeg,image/png,image/webp">
-                <div id="previewCurrentImg" style="margin-top:8px; display:none;">
-                    <span style="font-size:0.75rem; color:var(--text-muted);">Foto saat ini:</span><br>
-                    <img id="currentImgTag" src="" style="width:60px; height:60px; object-fit:cover; border-radius:4px; border:1px solid #e2e8f0; margin-top:4px;">
+                <div id="previewCurrentImg" style="margin-top:10px; display:none;">
+                    <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Foto saat ini:</span>
+                    <div style="display:flex; align-items:center; gap:12px; margin-top:4px;">
+                        <img id="currentImgTag" src="" style="width:60px; height:60px; object-fit:cover; border-radius:6px; border:1px solid #e2e8f0; transition:all 0.2s ease;">
+                        <label id="labelHapusFoto" style="display:inline-flex; align-items:center; gap:6px; cursor:pointer; font-size:0.8rem; color:#dc2626; background:#fef2f2; padding:6px 12px; border-radius:6px; border:1px solid #fecaca; user-select:none; transition:all 0.15s ease;">
+                            <input type="checkbox" name="hapus_foto" id="hapusFotoCheckbox" value="1" onchange="toggleHapusFoto(this)" style="cursor:pointer; accent-color:#dc2626;">
+                            <i class="fa-solid fa-trash-can"></i> Hapus Foto Ini
+                        </label>
+                    </div>
                 </div>
             </div>
 
@@ -361,6 +389,25 @@ require_once __DIR__ . '/../../includes/header.php';
 </style>
 
 <script>
+function toggleHapusFoto(checkbox) {
+    const img = document.getElementById('currentImgTag');
+    const label = document.getElementById('labelHapusFoto');
+    if (!img || !label) return;
+    if (checkbox.checked) {
+        img.style.opacity = '0.25';
+        img.style.filter = 'grayscale(100%)';
+        label.style.background = '#dc2626';
+        label.style.color = '#ffffff';
+        label.style.borderColor = '#dc2626';
+    } else {
+        img.style.opacity = '1';
+        img.style.filter = 'none';
+        label.style.background = '#fef2f2';
+        label.style.color = '#dc2626';
+        label.style.borderColor = '#fecaca';
+    }
+}
+
 function openModalTambah() {
     document.getElementById('modalTitle').textContent = 'Tambah Alat Baru';
     document.getElementById('formAction').value = 'create';
@@ -369,6 +416,8 @@ function openModalTambah() {
     document.getElementById('kategori').value = '';
     document.getElementById('satuanDefault').value = 'Bh';
     document.getElementById('gambarRef').value = '';
+    const chk = document.getElementById('hapusFotoCheckbox');
+    if (chk) { chk.checked = false; toggleHapusFoto(chk); }
     document.getElementById('previewCurrentImg').style.display = 'none';
     document.getElementById('modalBarang').classList.add('show');
     document.getElementById('namaBarang').focus();
@@ -382,6 +431,8 @@ function openModalEdit(row) {
     document.getElementById('kategori').value = row.kategori || '';
     document.getElementById('satuanDefault').value = row.satuan_default || 'Bh';
     document.getElementById('gambarRef').value = '';
+    const chk = document.getElementById('hapusFotoCheckbox');
+    if (chk) { chk.checked = false; toggleHapusFoto(chk); }
     
     if (row.gambar_referensi) {
         document.getElementById('currentImgTag').src = '<?= base_url('uploads/referensi/') ?>' + row.gambar_referensi;

@@ -25,9 +25,9 @@ if ($edit_id > 0) {
         header("Location: index.php"); exit;
     }
 
-    if (!in_array($edit_header['status'], ['draft', 'rejected'])) {
-        set_flash('warning', "Dokumen ini berstatus " . strtoupper($edit_header['status']) . " dan tidak dapat diubah.");
-        header("Location: " . base_url('riwayat/detail.php?id=' . $edit_id)); exit;
+    if (!in_array($edit_header['status'], ['draft', 'rejected', 'submitted', 'approved'])) {
+        set_flash('warning', "Dokumen tidak ditemukan.");
+        header("Location: index.php"); exit;
     }
 
     $jenis_pekerjaan = $edit_header['jenis_pekerjaan'];
@@ -251,20 +251,26 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
         </div>
 
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; margin-bottom:1rem;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom:1rem;">
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Nama Pelaksana / Pemeriksa 1 <span style="color:var(--danger);">*</span></label>
                 <input type="text" name="nama_pelaksana_1" class="form-control" value="<?= htmlspecialchars(isset($edit_header['nama_pelaksana_1']) ? $edit_header['nama_pelaksana_1'] : ($user ? $user['nama_lengkap'] : '')) ?>" placeholder="Ketik nama lengkap pemeriksa" required>
             </div>
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Nama Pelaksana 2 (jika ada)</label>
+                <label class="form-label">Nama Pemeriksa 2 <span style="color:#94a3b8;font-weight:400;">(jika ada)</span></label>
                 <input type="text" name="nama_pelaksana_2" class="form-control" value="<?= htmlspecialchars(isset($edit_header['nama_pelaksana_2']) ? $edit_header['nama_pelaksana_2'] : '') ?>" placeholder="Opsional">
             </div>
         </div>
 
-        <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Pendamping / Administrasi (jika ada)</label>
-            <input type="text" name="pendamping_admin" class="form-control" value="<?= htmlspecialchars(isset($edit_header['pendamping_admin']) ? $edit_header['pendamping_admin'] : '') ?>" placeholder="Opsional">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:0;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Nama Team Leader (TL) <span style="color:#94a3b8;font-weight:400;">(untuk TTD offline)</span></label>
+                <input type="text" name="nama_tl" class="form-control" value="<?= htmlspecialchars(isset($edit_header['nama_tl']) ? $edit_header['nama_tl'] : '') ?>" placeholder="Nama TL / Pengawas K3">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Nama Manager <span style="color:#94a3b8;font-weight:400;">(untuk TTD offline)</span></label>
+                <input type="text" name="nama_manager" class="form-control" value="<?= htmlspecialchars(isset($edit_header['nama_manager']) ? $edit_header['nama_manager'] : '') ?>" placeholder="Nama Manager ULP / Unit">
+            </div>
         </div>
     </div>
 
@@ -807,6 +813,8 @@ function saveLocalDraft() {
         pelaksana1: form.querySelector('[name="nama_pelaksana_1"]')?.value || '',
         pelaksana2: form.querySelector('[name="nama_pelaksana_2"]')?.value || '',
         pendamping: form.querySelector('[name="pendamping_admin"]')?.value || '',
+        namaTl: form.querySelector('[name="nama_tl"]')?.value || '',
+        namaManager: form.querySelector('[name="nama_manager"]')?.value || '',
         catatanUmum: form.querySelector('[name="catatan_umum"]')?.value || '',
         items: {}
     };
@@ -869,6 +877,8 @@ function restoreDraftData() {
         if (draft.pelaksana1) form.querySelector('[name="nama_pelaksana_1"]').value = draft.pelaksana1;
         if (draft.pelaksana2) form.querySelector('[name="nama_pelaksana_2"]').value = draft.pelaksana2;
         if (draft.pendamping) form.querySelector('[name="pendamping_admin"]').value = draft.pendamping;
+        if (draft.namaTl) form.querySelector('[name="nama_tl"]').value = draft.namaTl;
+        if (draft.namaManager) form.querySelector('[name="nama_manager"]').value = draft.namaManager;
         if (draft.catatanUmum) form.querySelector('[name="catatan_umum"]').value = draft.catatanUmum;
 
         if (draft.items) {

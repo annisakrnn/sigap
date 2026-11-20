@@ -84,11 +84,17 @@ try {
 
     // Kolom TTD Team Leader & Manager untuk pencetakan Berita Acara (TTD Fisik Offline)
     $ttd_manajemen = null;
-    $nama_pejabat_manajemen = isset($existing_header['nama_pejabat_manajemen']) && !empty($existing_header['nama_pejabat_manajemen']) ? $existing_header['nama_pejabat_manajemen'] : 'Team Leader / Pengawas K3';
+    $nama_pejabat_manajemen = trim(isset($_POST['nama_tl']) ? $_POST['nama_tl'] : '');
+    if (empty($nama_pejabat_manajemen)) {
+        $nama_pejabat_manajemen = isset($existing_header['nama_pejabat_manajemen']) && !empty($existing_header['nama_pejabat_manajemen']) ? $existing_header['nama_pejabat_manajemen'] : '';
+    }
     $jabatan_manajemen = isset($existing_header['jabatan_manajemen']) && !empty($existing_header['jabatan_manajemen']) ? $existing_header['jabatan_manajemen'] : 'Team Leader K3 / Pengawas';
 
     $ttd_manager = null;
-    $nama_manager = isset($existing_header['nama_manager']) && !empty($existing_header['nama_manager']) ? $existing_header['nama_manager'] : 'Manager ULP';
+    $nama_manager = trim(isset($_POST['nama_manager']) ? $_POST['nama_manager'] : '');
+    if (empty($nama_manager)) {
+        $nama_manager = isset($existing_header['nama_manager']) && !empty($existing_header['nama_manager']) ? $existing_header['nama_manager'] : '';
+    }
     $jabatan_manager = isset($existing_header['jabatan_manager']) && !empty($existing_header['jabatan_manager']) ? $existing_header['jabatan_manager'] : 'Manager ULP';
 
     // Unit & Plat Nomor Kendaraan

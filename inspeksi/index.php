@@ -224,7 +224,6 @@ require_once __DIR__ . '/../includes/header.php';
                         <th>Jenis Pekerjaan</th>
                         <th>Regu & Armada</th>
                         <th>Pelaksana</th>
-                        <th>Status</th>
                         <th style="text-align:center;">Aksi</th>
                     </tr>
                 </thead>
@@ -244,21 +243,14 @@ require_once __DIR__ . '/../includes/header.php';
                                 <?php endif; ?>
                             </td>
                             <td><?= htmlspecialchars($row['nama_pelaksana_1']) ?></td>
-                            <td>
-                                <span class="badge badge-<?= $row['status'] ?>">
-                                    <?= strtoupper($row['status']) ?>
-                                </span>
-                            </td>
                             <td style="text-align:center;">
-                                <div style="display:inline-flex; gap:6px;">
-                                    <a href="<?= base_url('riwayat/detail.php?id=' . $row['id']) ?>" class="btn btn-outline btn-sm">
-                                        <i class="fa-solid fa-eye"></i> Detail
+                                <div style="display:inline-flex; gap:12px; align-items:center; justify-content:center;">
+                                    <a href="<?= base_url('riwayat/detail.php?id=' . $row['id']) ?>" class="btn-icon btn-icon-detail" title="Lihat Detail">
+                                        <i class="fa-solid fa-eye"></i>
                                     </a>
-                                    <?php if ($row['status'] === 'approved'): ?>
-                                        <a href="<?= base_url('cetak/berita_acara.php?id=' . $row['id']) ?>" target="_blank" class="btn btn-primary btn-sm" title="Cetak Berita Acara Resmi">
-                                            <i class="fa-solid fa-print"></i> Cetak
-                                        </a>
-                                    <?php endif; ?>
+                                    <a href="<?= base_url('cetak/berita_acara.php?id=' . $row['id']) ?>" target="_blank" class="btn-icon btn-icon-print" title="Cetak Berita Acara">
+                                        <i class="fa-solid fa-print"></i>
+                                    </a>
                                 </div>
                             </td>
                         </tr>

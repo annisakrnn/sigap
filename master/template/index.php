@@ -311,12 +311,12 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <?= htmlspecialchars($row['satuan_default']) ?>
                             </td>
                             <td style="text-align:center; white-space:nowrap;">
-                                <div style="display:inline-flex; gap:6px;">
-                                    <button onclick='openModalEdit(<?= json_encode($row) ?>)' class="btn btn-outline btn-sm" title="Edit Item">
+                                <div style="display:inline-flex; gap:12px; align-items:center; justify-content:center;">
+                                    <button type="button" onclick='openModalEdit(<?= json_encode($row) ?>)' class="btn-icon btn-icon-edit" title="Edit Item">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
-                                    <button onclick="confirmHapus(<?= $row['id'] ?>, '<?= addslashes(htmlspecialchars($row['nama_barang'])) ?>')" class="btn btn-danger btn-sm" style="padding:4px 8px;" title="Hapus">
-                                        <i class="fa-solid fa-trash"></i>
+                                    <button type="button" onclick="confirmHapus(<?= $row['id'] ?>, '<?= addslashes(htmlspecialchars($row['nama_barang'])) ?>')" class="btn-icon btn-icon-delete" title="Hapus Item">
+                                        <i class="fa-solid fa-trash-can"></i>
                                     </button>
                                 </div>
                             </td>

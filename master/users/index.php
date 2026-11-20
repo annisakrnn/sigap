@@ -315,17 +315,17 @@ require_once __DIR__ . '/../../includes/header.php';
                                 </span>
                             </td>
                             <td style="text-align:center; white-space:nowrap;">
-                                <div style="display:inline-flex; gap:6px;">
-                                    <button onclick='openModalEdit(<?= json_encode($row) ?>)' class="btn btn-outline btn-sm" title="Edit Pengguna">
-                                        <i class="fa-solid fa-pen-to-square"></i> Edit
+                                <div style="display:inline-flex; gap:12px; align-items:center; justify-content:center;">
+                                    <button type="button" onclick='openModalEdit(<?= json_encode($row) ?>)' class="btn-icon btn-icon-edit" title="Edit Pengguna">
+                                        <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
                                     <?php if ($is_self): ?>
-                                        <button disabled class="btn btn-outline btn-sm" style="opacity:0.4; cursor:not-allowed;" title="Tidak dapat menghapus akun sendiri">
-                                            <i class="fa-solid fa-trash"></i>
+                                        <button disabled class="btn-icon" style="opacity:0.25; cursor:not-allowed;" title="Tidak dapat menghapus akun sendiri">
+                                            <i class="fa-solid fa-trash-can"></i>
                                         </button>
                                     <?php else: ?>
-                                        <button onclick="confirmHapus(<?= $row['id'] ?>, '<?= addslashes(htmlspecialchars($row['nama_lengkap'])) ?>', '<?= addslashes(htmlspecialchars($row['username'])) ?>', <?= $total_aktif ?>)" class="btn btn-danger btn-sm" style="padding:4px 8px;" title="Hapus">
-                                            <i class="fa-solid fa-trash"></i>
+                                        <button type="button" onclick="confirmHapus(<?= $row['id'] ?>, '<?= addslashes(htmlspecialchars($row['nama_lengkap'])) ?>', '<?= addslashes(htmlspecialchars($row['username'])) ?>', <?= $total_aktif ?>)" class="btn-icon btn-icon-delete" title="Hapus Pengguna">
+                                            <i class="fa-solid fa-trash-can"></i>
                                         </button>
                                     <?php endif; ?>
                                 </div>
