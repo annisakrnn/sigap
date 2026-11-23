@@ -1,0 +1,47 @@
+# =============================================================================
+# SIGAP - Sistem Informasi Gelar Alat & Perlengkapan K3
+# Apache Configuration for Production / Hosting (cPanel)
+# =============================================================================
+
+# Matikan directory browsing (Directory Listing)
+Options -Indexes
+
+# Lindungi file rahasia (.git, .env, .sql, config)
+<FilesMatch "^\.(git|env)">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<FilesMatch "\.(sql|log|md)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<Files "database.php">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Pengaturan batas upload file & eksekusi PHP (jika diizinkan hosting)
+<IfModule mod_php.c>
+    php_value upload_max_filesize 25M
+    php_value post_max_size 30M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+    php_value memory_limit 256M
+</IfModule>
+
+<IfModule mod_php7.c>
+    php_value upload_max_filesize 25M
+    php_value post_max_size 30M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+    php_value memory_limit 256M
+</IfModule>
+
+# Header keamanan dasar
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>

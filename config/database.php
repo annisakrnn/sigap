@@ -6,11 +6,12 @@
 
 require_once __DIR__ . '/compat_php5.php';
 
-define('DB_HOST', '127.0.0.1');
-define('DB_PORT', '3306');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'db_gelar_alat');
+// Konfigurasi Database (Sesuaikan dengan data cPanel / Hosting di jaringanponorogo.com)
+define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+define('DB_PORT', getenv('DB_PORT') ?: '3306');
+define('DB_USER', getenv('DB_USER') ?: 'root');
+define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : '');
+define('DB_NAME', getenv('DB_NAME') ?: 'db_gelar_alat');
 
 function get_db_connection() {
     static $pdo = null;

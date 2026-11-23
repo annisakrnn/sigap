@@ -42,20 +42,11 @@ if (!$jenis_pekerjaan || !$regu_id) {
 $edit_id = intval(isset($_POST['edit_id']) ? $_POST['edit_id'] : 0);
 $existing_header = null;
 if ($edit_id > 0) {
-    if ($user && $user['role'] === 'manajemen') {
-        $stmt_cek = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id LIMIT 1");
-        $stmt_cek->execute([':id' => $edit_id]);
-    } elseif ($user) {
-        $stmt_cek = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id AND petugas_id = :uid LIMIT 1");
-        $stmt_cek->execute([':id' => $edit_id, ':uid' => $user['id']]);
-    } else {
-        $stmt_cek = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id LIMIT 1");
-        $stmt_cek->execute([':id' => $edit_id]);
-    }
+    $stmt_cek = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id LIMIT 1");
+    $stmt_cek->execute([':id' => $edit_id]);
     $existing_header = $stmt_cek->fetch();
-    // Allow saving if draft/rejected or if user is manajemen (they can override)
-    if (!$existing_header || (!in_array($existing_header['status'], ['draft', 'rejected']) && ($user ? $user['role'] !== 'manajemen' : false))) {
-        set_flash('error', "Dokumen tidak dapat diubah.");
+    if (!$existing_header) {
+        set_flash('error', "Dokumen tidak ditemukan.");
         header("Location: index.php"); exit;
     }
 }
@@ -66,19 +57,28 @@ $ttd = trim(isset($_POST['ttd_petugas']) ? $_POST['ttd_petugas'] : '');
 try {
     $pdo->beginTransaction();
 
-    // 1. Upload foto kegiatan aman
-    $foto_kegiatan_path = isset($_POST['existing_foto_kegiatan']) ? $_POST['existing_foto_kegiatan'] : (isset($existing_header['foto_kegiatan']) ? $existing_header['foto_kegiatan'] : null);
+    // 1. Simpan foto kegiatan langsung ke MySQL (MEDIUMBLOB) - tanpa menyimpan file ke disk
+    $foto_kegiatan_blob = null;
+    $foto_kegiatan_mime = null;
+    $hapus_kegiatan = !empty($_POST['hapus_foto_kegiatan']) && $_POST['hapus_foto_kegiatan'] == '1';
+
     if (!empty($_FILES['foto_kegiatan']['name']) && !empty($_FILES['foto_kegiatan']['tmp_name'])) {
-        $up_kegiatan = secure_upload_image($_FILES['foto_kegiatan'], 'foto_kegiatan', 'apel');
+        $up_kegiatan = secure_read_image_for_db($_FILES['foto_kegiatan']);
         if ($up_kegiatan['success']) {
-            $foto_kegiatan_path = $up_kegiatan['filename'];
+            $foto_kegiatan_blob = $up_kegiatan['data'];
+            $foto_kegiatan_mime = $up_kegiatan['mime'];
         } else {
-            throw new Exception("Gagal mengunggah Foto Kegiatan: " . $up_kegiatan['error']);
+            throw new Exception("Gagal membaca Foto Kegiatan: " . $up_kegiatan['error']);
         }
+    } elseif (!$hapus_kegiatan && $existing_header && !empty($existing_header['foto_kegiatan'])) {
+        $foto_kegiatan_blob = $existing_header['foto_kegiatan'];
+        $foto_kegiatan_mime = !empty($existing_header['foto_kegiatan_mime']) ? $existing_header['foto_kegiatan_mime'] : 'image/jpeg';
     }
 
     // 2. Simpan atau Update header gelar alat
-    $status = ($action === 'submit') ? 'submitted' : 'draft';
+    $status = ($action === 'submit') 
+        ? (isset($existing_header['status']) && in_array($existing_header['status'], ['approved', 'submitted']) ? $existing_header['status'] : 'submitted') 
+        : 'draft';
     $raw_ttd = trim(isset($_POST['ttd_petugas']) ? $_POST['ttd_petugas'] : '');
     $ttd_petugas = (!empty($raw_ttd) && strlen($raw_ttd) >= 100) ? $raw_ttd : (isset($existing_header['ttd_petugas']) ? $existing_header['ttd_petugas'] : null);
 
@@ -125,6 +125,7 @@ try {
                 pendamping_admin       = :pendamping,
                 catatan_umum           = :catatan,
                 foto_kegiatan          = :foto,
+                foto_kegiatan_mime     = :foto_mime,
                 status                 = :status,
                 ttd_petugas            = :ttd,
                 ttd_manajemen          = :ttd_tl,
@@ -136,30 +137,39 @@ try {
                 updated_at             = NOW()
             WHERE id = :id
         ");
-        $stmt_header->execute([
-            ':nomor_dok'   => $nomor_dok,
-            ':tanggal'     => isset($_POST['tanggal_inspeksi']) ? $_POST['tanggal_inspeksi'] : date('Y-m-d'),
-            ':bulan_tahun' => isset($_POST['bulan_tahun']) ? $_POST['bulan_tahun'] : date('F Y'),
-            ':unit'        => $unit,
-            ':nopol'       => $nopol,
-            ':jenis'       => $jenis_pekerjaan,
-            ':regu_id'     => $regu_id,
-            ':nama1'       => trim(isset($_POST['nama_pelaksana_1']) ? $_POST['nama_pelaksana_1'] : ($user ? $user['nama_lengkap'] : 'Petugas Lapangan')),
-            ':jabatan'     => trim(isset($_POST['jabatan_petugas']) ? $_POST['jabatan_petugas'] : ($user ? $user['jabatan'] : '')) ?: null,
-            ':nama2'       => trim(isset($_POST['nama_pelaksana_2']) ? $_POST['nama_pelaksana_2'] : '') ?: null,
-            ':pendamping'  => trim(isset($_POST['pendamping_admin']) ? $_POST['pendamping_admin'] : '') ?: null,
-            ':catatan'     => trim(isset($_POST['catatan_umum']) ? $_POST['catatan_umum'] : '') ?: null,
-            ':foto'        => $foto_kegiatan_path,
-            ':status'      => $status,
-            ':ttd'         => $ttd_petugas,
-            ':ttd_tl'      => $ttd_manajemen,
-            ':nama_tl'     => $nama_pejabat_manajemen,
-            ':jab_tl'      => $jabatan_manajemen,
-            ':nama_mgr'    => $nama_manager,
-            ':jab_mgr'     => $jabatan_manager,
-            ':ttd_mgr'     => $ttd_manager,
-            ':id'          => $header_id
-        ]);
+        $stmt_header->bindValue(':nomor_dok', $nomor_dok);
+        $stmt_header->bindValue(':tanggal', isset($_POST['tanggal_inspeksi']) ? $_POST['tanggal_inspeksi'] : date('Y-m-d'));
+        $stmt_header->bindValue(':bulan_tahun', isset($_POST['bulan_tahun']) ? $_POST['bulan_tahun'] : date('F Y'));
+        $stmt_header->bindValue(':unit', $unit);
+        $stmt_header->bindValue(':nopol', $nopol);
+        $stmt_header->bindValue(':jenis', $jenis_pekerjaan);
+        $stmt_header->bindValue(':regu_id', $regu_id, PDO::PARAM_INT);
+        $stmt_header->bindValue(':nama1', trim(isset($_POST['nama_pelaksana_1']) ? $_POST['nama_pelaksana_1'] : ($user ? $user['nama_lengkap'] : 'Petugas Lapangan')));
+        $stmt_header->bindValue(':jabatan', trim(isset($_POST['jabatan_petugas']) ? $_POST['jabatan_petugas'] : ($user ? $user['jabatan'] : '')) ?: null);
+        $stmt_header->bindValue(':nama2', trim(isset($_POST['nama_pelaksana_2']) ? $_POST['nama_pelaksana_2'] : '') ?: null);
+        $stmt_header->bindValue(':pendamping', trim(isset($_POST['pendamping_admin']) ? $_POST['pendamping_admin'] : '') ?: null);
+        $stmt_header->bindValue(':catatan', trim(isset($_POST['catatan_umum']) ? $_POST['catatan_umum'] : '') ?: null);
+        $stmt_header->bindValue(':foto', $foto_kegiatan_blob, $foto_kegiatan_blob !== null ? PDO::PARAM_LOB : PDO::PARAM_NULL);
+        $stmt_header->bindValue(':foto_mime', $foto_kegiatan_mime);
+        $stmt_header->bindValue(':status', $status);
+        $stmt_header->bindValue(':ttd', $ttd_petugas);
+        $stmt_header->bindValue(':ttd_tl', $ttd_manajemen);
+        $stmt_header->bindValue(':nama_tl', $nama_pejabat_manajemen);
+        $stmt_header->bindValue(':jab_tl', $jabatan_manajemen);
+        $stmt_header->bindValue(':nama_mgr', $nama_manager);
+        $stmt_header->bindValue(':jab_mgr', $jabatan_manager);
+        $stmt_header->bindValue(':ttd_mgr', $ttd_manager);
+        $stmt_header->bindValue(':id', $header_id, PDO::PARAM_INT);
+        $stmt_header->execute();
+
+        // Ambil dan simpan cache foto temuan lama sebelum detail dihapus (agar tidak hilang saat edit)
+        $existing_photos_map = [];
+        $stmt_get_photos = $pdo->prepare("SELECT id, master_barang_id, foto_temuan, foto_temuan_mime FROM gelar_alat_detail WHERE gelar_alat_id = :id AND foto_temuan IS NOT NULL");
+        $stmt_get_photos->execute([':id' => $header_id]);
+        foreach ($stmt_get_photos->fetchAll(PDO::FETCH_ASSOC) as $old_p) {
+            $existing_photos_map[$old_p['id']] = $old_p;
+            $existing_photos_map['b_' . $old_p['master_barang_id']] = $old_p;
+        }
 
         // Hapus detail lama untuk di-refresh
         $pdo->prepare("DELETE FROM gelar_alat_detail WHERE gelar_alat_id = :id")->execute([':id' => $header_id]);
@@ -172,38 +182,38 @@ try {
             INSERT INTO gelar_alat_header 
                 (nomor_dokumen, tanggal_inspeksi, bulan_tahun, unit, nopol, jenis_pekerjaan, regu_id, 
                  nama_pelaksana_1, jabatan_petugas, nama_pelaksana_2, pendamping_admin, catatan_umum, 
-                 foto_kegiatan, status, ttd_petugas, ttd_manajemen, nama_pejabat_manajemen, jabatan_manajemen,
+                 foto_kegiatan, foto_kegiatan_mime, status, ttd_petugas, ttd_manajemen, nama_pejabat_manajemen, jabatan_manajemen,
                  nama_manager, jabatan_manager, ttd_manager, petugas_id)
             VALUES 
                 (:nomor_dok, :tanggal, :bulan_tahun, :unit, :nopol, :jenis, :regu_id,
                  :nama1, :jabatan, :nama2, :pendamping, :catatan,
-                 :foto, :status, :ttd, :ttd_tl, :nama_tl, :jab_tl,
+                 :foto, :foto_mime, :status, :ttd, :ttd_tl, :nama_tl, :jab_tl,
                  :nama_mgr, :jab_mgr, :ttd_mgr, :petugas_id)
         ");
-        $stmt_header->execute([
-            ':nomor_dok'   => $nomor_dok,
-            ':tanggal'     => isset($_POST['tanggal_inspeksi']) ? $_POST['tanggal_inspeksi'] : date('Y-m-d'),
-            ':bulan_tahun' => isset($_POST['bulan_tahun']) ? $_POST['bulan_tahun'] : date('F Y'),
-            ':unit'        => $unit,
-            ':nopol'       => $nopol,
-            ':jenis'       => $jenis_pekerjaan,
-            ':regu_id'     => $regu_id,
-            ':nama1'       => trim(isset($_POST['nama_pelaksana_1']) ? $_POST['nama_pelaksana_1'] : ($user ? $user['nama_lengkap'] : 'Petugas Lapangan')),
-            ':jabatan'     => trim(isset($_POST['jabatan_petugas']) ? $_POST['jabatan_petugas'] : ($user ? $user['jabatan'] : '')) ?: null,
-            ':nama2'       => trim(isset($_POST['nama_pelaksana_2']) ? $_POST['nama_pelaksana_2'] : '') ?: null,
-            ':pendamping'  => trim(isset($_POST['pendamping_admin']) ? $_POST['pendamping_admin'] : '') ?: null,
-            ':catatan'     => trim(isset($_POST['catatan_umum']) ? $_POST['catatan_umum'] : '') ?: null,
-            ':foto'        => $foto_kegiatan_path,
-            ':status'      => $status,
-            ':ttd'         => $ttd_petugas,
-            ':ttd_tl'      => $ttd_manajemen,
-            ':nama_tl'     => $nama_pejabat_manajemen,
-            ':jab_tl'      => $jabatan_manajemen,
-            ':nama_mgr'    => $nama_manager,
-            ':jab_mgr'     => $jabatan_manager,
-            ':ttd_mgr'     => $ttd_manager,
-            ':petugas_id'  => $petugas_id
-        ]);
+        $stmt_header->bindValue(':nomor_dok', $nomor_dok);
+        $stmt_header->bindValue(':tanggal', isset($_POST['tanggal_inspeksi']) ? $_POST['tanggal_inspeksi'] : date('Y-m-d'));
+        $stmt_header->bindValue(':bulan_tahun', isset($_POST['bulan_tahun']) ? $_POST['bulan_tahun'] : date('F Y'));
+        $stmt_header->bindValue(':unit', $unit);
+        $stmt_header->bindValue(':nopol', $nopol);
+        $stmt_header->bindValue(':jenis', $jenis_pekerjaan);
+        $stmt_header->bindValue(':regu_id', $regu_id, PDO::PARAM_INT);
+        $stmt_header->bindValue(':nama1', trim(isset($_POST['nama_pelaksana_1']) ? $_POST['nama_pelaksana_1'] : ($user ? $user['nama_lengkap'] : 'Petugas Lapangan')));
+        $stmt_header->bindValue(':jabatan', trim(isset($_POST['jabatan_petugas']) ? $_POST['jabatan_petugas'] : ($user ? $user['jabatan'] : '')) ?: null);
+        $stmt_header->bindValue(':nama2', trim(isset($_POST['nama_pelaksana_2']) ? $_POST['nama_pelaksana_2'] : '') ?: null);
+        $stmt_header->bindValue(':pendamping', trim(isset($_POST['pendamping_admin']) ? $_POST['pendamping_admin'] : '') ?: null);
+        $stmt_header->bindValue(':catatan', trim(isset($_POST['catatan_umum']) ? $_POST['catatan_umum'] : '') ?: null);
+        $stmt_header->bindValue(':foto', $foto_kegiatan_blob, $foto_kegiatan_blob !== null ? PDO::PARAM_LOB : PDO::PARAM_NULL);
+        $stmt_header->bindValue(':foto_mime', $foto_kegiatan_mime);
+        $stmt_header->bindValue(':status', $status);
+        $stmt_header->bindValue(':ttd', $ttd_petugas);
+        $stmt_header->bindValue(':ttd_tl', $ttd_manajemen);
+        $stmt_header->bindValue(':nama_tl', $nama_pejabat_manajemen);
+        $stmt_header->bindValue(':jab_tl', $jabatan_manajemen);
+        $stmt_header->bindValue(':nama_mgr', $nama_manager);
+        $stmt_header->bindValue(':jab_mgr', $jabatan_manager);
+        $stmt_header->bindValue(':ttd_mgr', $ttd_manager);
+        $stmt_header->bindValue(':petugas_id', $petugas_id, PDO::PARAM_INT);
+        $stmt_header->execute();
         $header_id = $pdo->lastInsertId();
     }
 
@@ -232,6 +242,7 @@ try {
         // Foto temuan item — simpan binary langsung ke MySQL (MEDIUMBLOB)
         $foto_temuan_blob = null;
         $foto_temuan_mime = null;
+        $hapus_item_foto = !empty($item_data['hapus_foto']) && $item_data['hapus_foto'] == '1';
 
         // Jika ada foto baru di-upload, baca sebagai binary
         $foto_key_1 = 'foto_item_' . $item_tpl_id;
@@ -246,34 +257,31 @@ try {
                 $foto_temuan_mime = $up_temuan['mime'];
             }
             // Jika gagal baca blob, biarkan null (tidak throw exception agar item tetap tersimpan)
-        } elseif (!empty($item_data['existing_foto_id'])) {
-            // Jika ada foto lama (edit mode) — ambil blob dari DB berdasarkan detail_id lama
-            $old_id = intval($item_data['existing_foto_id']);
-            if ($old_id > 0) {
-                $stmt_old = $pdo->prepare("SELECT foto_temuan, foto_temuan_mime FROM gelar_alat_detail WHERE id = :id LIMIT 1");
-                $stmt_old->execute([':id' => $old_id]);
-                $old_row = $stmt_old->fetch(PDO::FETCH_ASSOC);
-                if ($old_row && !empty($old_row['foto_temuan'])) {
-                    $foto_temuan_blob = $old_row['foto_temuan'];
-                    $foto_temuan_mime = $old_row['foto_temuan_mime'];
-                }
+        } elseif (!$hapus_item_foto && !empty($existing_photos_map)) {
+            // Jika ada foto lama (edit mode) dan tidak dihapus — ambil blob dari cache map
+            $old_id = intval(isset($item_data['existing_foto_id']) ? $item_data['existing_foto_id'] : 0);
+            if ($old_id > 0 && isset($existing_photos_map[$old_id])) {
+                $foto_temuan_blob = $existing_photos_map[$old_id]['foto_temuan'];
+                $foto_temuan_mime = $existing_photos_map[$old_id]['foto_temuan_mime'];
+            } elseif (isset($existing_photos_map['b_' . $barang_id])) {
+                $foto_temuan_blob = $existing_photos_map['b_' . $barang_id]['foto_temuan'];
+                $foto_temuan_mime = $existing_photos_map['b_' . $barang_id]['foto_temuan_mime'];
             }
         }
 
         $kondisi_val = isset($item_data['kondisi']) ? $item_data['kondisi'] : '';
-        $stmt_detail->execute([
-            ':header_id'         => $header_id,
-            ':barang_id'         => $barang_id,
-            ':nama_snapshot'     => $barang['nama_barang'],
-            ':kategori_snapshot' => isset($item_data['kategori']) ? $item_data['kategori'] : $barang['kategori'],
-            ':std'               => intval(isset($item_data['jumlah_standar']) ? $item_data['jumlah_standar'] : 1),
-            ':realisasi'         => intval(isset($item_data['realisasi']) ? $item_data['realisasi'] : 0),
-            ':satuan'            => isset($item_data['satuan']) ? $item_data['satuan'] : '-',
-            ':kondisi'           => in_array($kondisi_val, ['baik','rusak','waktu_ganti','hilang','ada','tidak_ada']) ? $kondisi_val : 'baik',
-            ':ket'               => trim(isset($item_data['keterangan']) ? $item_data['keterangan'] : '') ?: null,
-            ':foto'              => $foto_temuan_blob,
-            ':foto_mime'         => $foto_temuan_mime,
-        ]);
+        $stmt_detail->bindValue(':header_id', $header_id, PDO::PARAM_INT);
+        $stmt_detail->bindValue(':barang_id', $barang_id, PDO::PARAM_INT);
+        $stmt_detail->bindValue(':nama_snapshot', $barang['nama_barang']);
+        $stmt_detail->bindValue(':kategori_snapshot', isset($item_data['kategori']) ? $item_data['kategori'] : $barang['kategori']);
+        $stmt_detail->bindValue(':std', intval(isset($item_data['jumlah_standar']) ? $item_data['jumlah_standar'] : 1), PDO::PARAM_INT);
+        $stmt_detail->bindValue(':realisasi', intval(isset($item_data['realisasi']) ? $item_data['realisasi'] : 0), PDO::PARAM_INT);
+        $stmt_detail->bindValue(':satuan', isset($item_data['satuan']) ? $item_data['satuan'] : '-');
+        $stmt_detail->bindValue(':kondisi', in_array($kondisi_val, ['baik','rusak','waktu_ganti','hilang','ada','tidak_ada']) ? $kondisi_val : 'baik');
+        $stmt_detail->bindValue(':ket', trim(isset($item_data['keterangan']) ? $item_data['keterangan'] : '') ?: null);
+        $stmt_detail->bindValue(':foto', $foto_temuan_blob, $foto_temuan_blob !== null ? PDO::PARAM_LOB : PDO::PARAM_NULL);
+        $stmt_detail->bindValue(':foto_mime', $foto_temuan_mime);
+        $stmt_detail->execute();
     }
 
     // Notifikasi offline (tidak perlu push notif ke manajemen karena approval offline)

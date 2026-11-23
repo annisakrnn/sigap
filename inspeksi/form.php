@@ -310,7 +310,7 @@ require_once __DIR__ . '/../includes/header.php';
                             <th width="90px">Realisasi</th>
                             <th>Kondisi</th>
                             <th>Keterangan</th>
-                            <th width="80px">Foto</th>
+                            <th width="105px" class="text-center">Foto</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -320,7 +320,8 @@ require_once __DIR__ . '/../includes/header.php';
                             $realisasi_val = $prev_d ? $prev_d['jumlah_realisasi'] : $item['jumlah_standar'];
                             $kondisi_val = $prev_d ? $prev_d['kondisi'] : 'baik';
                             $keterangan_val = $prev_d ? $prev_d['keterangan'] : '';
-                            $foto_val = $prev_d ? $prev_d['foto_temuan'] : '';
+                            $has_foto = $prev_d && !empty($prev_d['foto_temuan']);
+                            $prev_detail_id = $prev_d ? $prev_d['id'] : 0;
                             ?>
                             <tr id="row_<?= $item['id'] ?>">
                                 <td><?= $idx + 1 ?></td>
@@ -330,7 +331,8 @@ require_once __DIR__ . '/../includes/header.php';
                                     <input type="hidden" name="items[<?= $item['id'] ?>][jumlah_standar]" value="<?= $item['jumlah_standar'] ?>">
                                     <input type="hidden" name="items[<?= $item['id'] ?>][satuan]" value="<?= htmlspecialchars($item['satuan_default']) ?>">
                                     <input type="hidden" name="items[<?= $item['id'] ?>][kategori]" value="<?= htmlspecialchars($item['kategori']) ?>">
-                                    <input type="hidden" name="items[<?= $item['id'] ?>][existing_foto]" value="<?= htmlspecialchars($foto_val) ?>">
+                                    <input type="hidden" name="items[<?= $item['id'] ?>][existing_foto_id]" value="<?= $prev_detail_id ?>">
+                                    <input type="hidden" name="items[<?= $item['id'] ?>][hapus_foto]" id="hapusFoto_<?= $item['id'] ?>" value="0">
                                 </td>
                                 <td class="text-center">
                                     <span class="badge" style="background:#f1f5f9;color:var(--navy);">
@@ -366,21 +368,30 @@ require_once __DIR__ . '/../includes/header.php';
                                 <td>
                                     <input type="text" name="items[<?= $item['id'] ?>][keterangan]" class="form-control ket-input" placeholder="Opsional" value="<?= htmlspecialchars($keterangan_val ?? '') ?>" style="font-size:0.8rem;padding:5px 8px;">
                                 </td>
-                                <td>
+                                <td style="text-align:center; vertical-align:middle;">
                                     <input type="file" name="foto_item_<?= $item['id'] ?>" 
                                         class="foto-item-input" 
                                         accept="image/*" capture="environment"
                                         style="display:none;" id="fotoInput_<?= $item['id'] ?>">
-                                    <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
-                                        <button type="button" class="btn btn-outline btn-sm btn-foto-cam" 
-                                            onclick="openLiveCamera('<?= $item['id'] ?>', '<?= addslashes(htmlspecialchars($item['nama_barang'])) ?>')"
-                                            id="btnFoto_<?= $item['id'] ?>" title="Buka Kamera Langsung">
-                                            <i class="fa-solid fa-camera"></i>
-                                        </button>
-                                        <?php if (!empty($foto_val)): ?>
-                                            <div style="margin-top:2px; font-size:0.65rem; color:#10b981;" id="lblFoto_<?= $item['id'] ?>">
-                                                <i class="fa-solid fa-check"></i> Ada foto
+                                    <div id="boxFotoItem_<?= $item['id'] ?>" data-nama="<?= htmlspecialchars($item['nama_barang'], ENT_QUOTES) ?>" style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:45px;">
+                                        <?php if ($has_foto): ?>
+                                            <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                                                <img src="<?= base_url('foto/temuan.php?id=' . $prev_detail_id) ?>" style="width:48px; height:48px; object-fit:cover; border-radius:6px; border:2px solid #10b981; cursor:pointer;" onclick="window.open(this.src, '_blank')" title="Klik perbesar foto">
+                                                <div style="display:flex; gap:3px; margin-top:3px;">
+                                                    <button type="button" class="btn btn-outline btn-xs" onclick="openLiveCamera('<?= $item['id'] ?>', '<?= addslashes(htmlspecialchars($item['nama_barang'])) ?>')" title="Ganti / Edit Foto" style="padding:1px 5px; font-size:0.65rem; border-color:#3b82f6; color:#3b82f6;">
+                                                        <i class="fa-solid fa-camera"></i> Ganti
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline btn-xs" onclick="hapusFotoItem('<?= $item['id'] ?>')" title="Hapus Foto" style="padding:1px 5px; font-size:0.65rem; border-color:#ef4444; color:#ef4444;">
+                                                        <i class="fa-solid fa-trash"></i>
+                                                    </button>
+                                                </div>
                                             </div>
+                                        <?php else: ?>
+                                            <button type="button" class="btn btn-outline btn-sm btn-foto-cam" 
+                                                onclick="openLiveCamera('<?= $item['id'] ?>', '<?= addslashes(htmlspecialchars($item['nama_barang'])) ?>')"
+                                                id="btnFoto_<?= $item['id'] ?>" title="Buka Kamera Langsung">
+                                                <i class="fa-solid fa-camera"></i>
+                                            </button>
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -398,7 +409,8 @@ require_once __DIR__ . '/../includes/header.php';
                     $realisasi_val = $prev_d ? $prev_d['jumlah_realisasi'] : $item['jumlah_standar'];
                     $kondisi_val = $prev_d ? $prev_d['kondisi'] : 'baik';
                     $keterangan_val = $prev_d ? $prev_d['keterangan'] : '';
-                    $foto_val = $prev_d ? $prev_d['foto_temuan'] : '';
+                    $has_foto = $prev_d && !empty($prev_d['foto_temuan']);
+                    $prev_detail_id = $prev_d ? $prev_d['id'] : 0;
                     $need_ket = in_array($kondisi_val, ['rusak', 'waktu_ganti']);
                     ?>
                     <div class="item-card" style="border:1px solid var(--border-color);border-radius:var(--radius-md);padding:12px;margin-bottom:8px;background:#fafafa;" id="card_<?= $item['id'] ?>">
@@ -411,17 +423,28 @@ require_once __DIR__ . '/../includes/header.php';
                                 </div>
                             </div>
                             <div style="text-align:right;">
-                                <input type="file" name="foto_item_<?= $item['id'] ?>" accept="image/*" capture="environment" style="display:none;" id="fotoInputM_<?= $item['id'] ?>">
-                                <button type="button" class="btn btn-outline btn-sm btn-foto-cam" 
-                                    onclick="openLiveCamera('<?= $item['id'] ?>', '<?= addslashes(htmlspecialchars($item['nama_barang'])) ?>')" 
-                                    id="btnFotoM_<?= $item['id'] ?>" title="Buka Kamera Langsung">
-                                    <i class="fa-solid fa-camera"></i>
-                                </button>
-                                <?php if (!empty($foto_val)): ?>
-                                    <div style="font-size:0.65rem; color:#10b981; margin-top:2px;" id="lblFotoM_<?= $item['id'] ?>">
-                                        <i class="fa-solid fa-check"></i> Foto tersimpan
-                                    </div>
-                                <?php endif; ?>
+                                <input type="file" name="foto_item_m_<?= $item['id'] ?>" accept="image/*" capture="environment" style="display:none;" id="fotoInputM_<?= $item['id'] ?>">
+                                <div id="boxFotoItemM_<?= $item['id'] ?>" data-nama="<?= htmlspecialchars($item['nama_barang'], ENT_QUOTES) ?>" style="display:flex; flex-direction:column; align-items:flex-end;">
+                                    <?php if ($has_foto): ?>
+                                        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+                                            <img src="<?= base_url('foto/temuan.php?id=' . $prev_detail_id) ?>" style="width:48px; height:48px; object-fit:cover; border-radius:6px; border:2px solid #10b981; cursor:pointer;" onclick="window.open(this.src, '_blank')" title="Klik perbesar foto">
+                                            <div style="display:flex; gap:3px; margin-top:3px;">
+                                                <button type="button" class="btn btn-outline btn-xs" onclick="openLiveCamera('<?= $item['id'] ?>', '<?= addslashes(htmlspecialchars($item['nama_barang'])) ?>')" title="Ganti / Edit Foto" style="padding:1px 5px; font-size:0.65rem; border-color:#3b82f6; color:#3b82f6;">
+                                                    <i class="fa-solid fa-camera"></i> Ganti
+                                                </button>
+                                                <button type="button" class="btn btn-outline btn-xs" onclick="hapusFotoItem('<?= $item['id'] ?>')" title="Hapus Foto" style="padding:1px 5px; font-size:0.65rem; border-color:#ef4444; color:#ef4444;">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    <?php else: ?>
+                                        <button type="button" class="btn btn-outline btn-sm btn-foto-cam" 
+                                            onclick="openLiveCamera('<?= $item['id'] ?>', '<?= addslashes(htmlspecialchars($item['nama_barang'])) ?>')" 
+                                            id="btnFotoM_<?= $item['id'] ?>" title="Buka Kamera Langsung">
+                                            <i class="fa-solid fa-camera"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
 
@@ -429,7 +452,8 @@ require_once __DIR__ . '/../includes/header.php';
                         <input type="hidden" name="items[<?= $item['id'] ?>][jumlah_standar]" value="<?= $item['jumlah_standar'] ?>">
                         <input type="hidden" name="items[<?= $item['id'] ?>][satuan]" value="<?= htmlspecialchars($item['satuan_default']) ?>">
                         <input type="hidden" name="items[<?= $item['id'] ?>][kategori]" value="<?= htmlspecialchars($item['kategori']) ?>">
-                        <input type="hidden" name="items[<?= $item['id'] ?>][existing_foto]" value="<?= htmlspecialchars($foto_val) ?>">
+                        <input type="hidden" name="items[<?= $item['id'] ?>][existing_foto_id]" value="<?= $prev_detail_id ?>">
+                        <input type="hidden" name="items[<?= $item['id'] ?>][hapus_foto]" id="hapusFotoM_<?= $item['id'] ?>" value="0">
 
                         <div style="display:grid;grid-template-columns:100px 1fr;gap:8px;margin-bottom:8px;align-items:center;">
                             <label style="font-size:0.8rem;font-weight:600;">Realisasi:</label>
@@ -483,28 +507,39 @@ require_once __DIR__ . '/../includes/header.php';
             </h2>
         </div>
         <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Foto Bersama Regu / Apel Pasukan</label>
-            <?php if (!empty($edit_header['foto_kegiatan'])): ?>
-                <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px;" id="boxFotoKegiatanLama">
-                    <img src="<?= base_url('uploads/foto_kegiatan/' . htmlspecialchars($edit_header['foto_kegiatan'])) ?>" style="max-height:70px; border-radius:6px; border:1px solid var(--border-color);">
-                    <div style="font-size:0.75rem; color:var(--text-muted);">
-                        Foto sebelumnya tersimpan. Ambil foto baru jika ingin mengganti.
-                        <input type="hidden" name="existing_foto_kegiatan" value="<?= htmlspecialchars($edit_header['foto_kegiatan']) ?>">
+            <label class="form-label" style="font-weight:600;">Foto Bersama Regu / Apel Pasukan</label>
+            <input type="hidden" name="hapus_foto_kegiatan" id="hapusFotoKegiatan" value="0">
+            <input type="file" name="foto_kegiatan" id="fotoKegiatanInput" accept="image/*" capture="environment" style="display:none;">
+
+            <!-- Preview Card jika ada foto tersimpan atau baru dipilih -->
+            <div id="boxFotoKegiatanPreview" style="<?= !empty($edit_header['foto_kegiatan']) ? 'display:flex;' : 'display:none;' ?> align-items:center; gap:14px; padding:12px; border:1px solid #cbd5e1; border-radius:8px; background:#f8fafc; max-width:520px; margin-bottom:10px;">
+                <img src="<?= !empty($edit_header['foto_kegiatan']) ? base_url('foto/kegiatan.php?id=' . intval($edit_header['id'])) : '' ?>" id="kegiatanImgTag" style="max-height:85px; max-width:130px; object-fit:cover; border-radius:6px; border:2px solid #10b981; cursor:pointer;" onclick="if(this.src) window.open(this.src, '_blank')" title="Klik perbesar foto">
+                <div>
+                    <div style="font-weight:600; font-size:0.875rem; color:#0f172a; margin-bottom:2px;" id="kegiatanTitle">
+                        <?= !empty($edit_header['foto_kegiatan']) ? 'Foto Kegiatan Tersimpan' : 'Foto Kegiatan Dipilih' ?>
+                    </div>
+                    <div style="font-size:0.75rem; color:#64748b; margin-bottom:8px;">
+                        Foto apel pemeriksaan kesiapan armada & personel regu.
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" class="btn btn-outline btn-sm" onclick="openLiveCamera('kegiatan', 'Foto Bersama Regu / Apel Pasukan')" style="font-size:0.75rem; padding:4px 10px; border-color:#3b82f6; color:#3b82f6;">
+                            <i class="fa-solid fa-camera"></i> Ganti Foto
+                        </button>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="hapusFotoKegiatan()" style="font-size:0.75rem; padding:4px 10px; border-color:#ef4444; color:#ef4444;">
+                            <i class="fa-solid fa-trash"></i> Hapus Foto
+                        </button>
                     </div>
                 </div>
-            <?php endif; ?>
-            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+            </div>
+
+            <!-- Tombol Aksi Upload (Tampil jika belum ada foto atau setelah dihapus) -->
+            <div id="boxFotoKegiatanBtns" style="<?= !empty($edit_header['foto_kegiatan']) ? 'display:none;' : 'display:flex;' ?> gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
                 <button type="button" class="btn btn-primary btn-sm" onclick="openLiveCamera('kegiatan', 'Foto Bersama Regu / Apel Pasukan')">
                     <i class="fa-solid fa-camera"></i> Ambil Foto Langsung (Live Camera)
                 </button>
-                <label class="btn btn-outline btn-sm" style="margin-bottom:0; cursor:pointer;" title="Pilih dari Galeri atau File">
+                <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('fotoKegiatanInput').click()" title="Pilih dari Galeri atau File">
                     <i class="fa-solid fa-folder-open"></i> Ambil dari File
-                    <input type="file" name="foto_kegiatan" id="fotoKegiatanInput" accept="image/*" capture="environment" style="display:none;">
-                </label>
-            </div>
-            <div id="kegiatanPreviewWrap" style="display:none; margin-top:8px;">
-                <img id="kegiatanPreviewImg" style="max-height:140px; border-radius:8px; border:2px solid #10b981; object-fit:cover;">
-                <div id="kegiatanCompressBadge" style="margin-top:4px;"></div>
+                </button>
             </div>
             <small style="color:var(--text-muted);">Foto bersama seluruh anggota regu saat apel gelar alat. Maks 15MB (JPG/PNG/WEBP).</small>
         </div>
@@ -627,6 +662,153 @@ const DRAFT_KEY = 'sigap_draft_<?= $jenis_pekerjaan ?>_<?= $regu_id ?>';
 const IS_EDIT_MODE = <?= $edit_id > 0 ? 'true' : 'false' ?>;
 
 // ========================================
+// Handler Manajemen Foto (Hapus & Preview)
+// ========================================
+window.hapusFotoItem = function(itemId) {
+    if (!confirm('Apakah Anda yakin ingin menghapus foto alat ini?')) return;
+
+    // 1. Set flag hapus_foto menjadi 1 pada desktop dan mobile
+    const h1 = document.getElementById('hapusFoto_' + itemId);
+    if (h1) h1.value = '1';
+    const h2 = document.getElementById('hapusFotoM_' + itemId);
+    if (h2) h2.value = '1';
+
+    // 2. Kosongkan input file jika ada file yang baru dipilih
+    const f1 = document.getElementById('fotoInput_' + itemId);
+    if (f1) f1.value = '';
+    const f2 = document.getElementById('fotoInputM_' + itemId);
+    if (f2) f2.value = '';
+
+    // 3. Ambil nama barang untuk tombol kamera ulang
+    const boxD = document.getElementById('boxFotoItem_' + itemId);
+    const boxM = document.getElementById('boxFotoItemM_' + itemId);
+    const namaBarang = (boxD && boxD.dataset.nama) || (boxM && boxM.dataset.nama) || 'Alat';
+    const safeNama = namaBarang.replace(/'/g, "\\'");
+
+    // 4. Update UI Desktop
+    if (boxD) {
+        boxD.innerHTML = `
+            <button type="button" class="btn btn-outline btn-sm btn-foto-cam" 
+                onclick="openLiveCamera('${itemId}', '${safeNama}')"
+                id="btnFoto_${itemId}" title="Buka Kamera Langsung">
+                <i class="fa-solid fa-camera"></i>
+            </button>
+            <div style="font-size:0.65rem; color:#ef4444; margin-top:3px; font-weight:600;">
+                <i class="fa-solid fa-trash"></i> Dihapus
+            </div>
+        `;
+    }
+
+    // 5. Update UI Mobile
+    if (boxM) {
+        boxM.innerHTML = `
+            <button type="button" class="btn btn-outline btn-sm btn-foto-cam" 
+                onclick="openLiveCamera('${itemId}', '${safeNama}')" 
+                id="btnFotoM_${itemId}" title="Buka Kamera Langsung">
+                <i class="fa-solid fa-camera"></i>
+            </button>
+            <div style="font-size:0.65rem; color:#ef4444; margin-top:3px; font-weight:600;">
+                <i class="fa-solid fa-trash"></i> Dihapus
+            </div>
+        `;
+    }
+
+    // 6. Hapus badge kompresi lama jika ada
+    const row = document.getElementById('row_' + itemId);
+    const card = document.getElementById('card_' + itemId);
+    [row, card].forEach(el => {
+        if (!el) return;
+        el.querySelectorAll('.compress-badge').forEach(b => b.remove());
+    });
+};
+
+window.renderItemPhotoPreview = function(itemId, imgUrl, badgeText) {
+    // 1. Reset flag hapus menjadi 0
+    const h1 = document.getElementById('hapusFoto_' + itemId);
+    if (h1) h1.value = '0';
+    const h2 = document.getElementById('hapusFotoM_' + itemId);
+    if (h2) h2.value = '0';
+
+    const boxD = document.getElementById('boxFotoItem_' + itemId);
+    const boxM = document.getElementById('boxFotoItemM_' + itemId);
+    const namaBarang = (boxD && boxD.dataset.nama) || (boxM && boxM.dataset.nama) || 'Alat';
+    const safeNama = namaBarang.replace(/'/g, "\\'");
+
+    const badgeHtml = badgeText ? `<div class="compress-badge" style="font-size:0.65rem; color:#047857; background:#d1fae5; padding:1px 5px; border-radius:4px; margin-top:2px; font-weight:600;">${badgeText}</div>` : '';
+
+    if (boxD) {
+        boxD.innerHTML = `
+            <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                <img src="${imgUrl}" style="width:48px; height:48px; object-fit:cover; border-radius:6px; border:2px solid #10b981; cursor:pointer;" onclick="window.open(this.src, '_blank')" title="Klik perbesar foto">
+                <div style="display:flex; gap:3px; margin-top:3px;">
+                    <button type="button" class="btn btn-outline btn-xs" onclick="openLiveCamera('${itemId}', '${safeNama}')" title="Ganti / Edit Foto" style="padding:1px 5px; font-size:0.65rem; border-color:#3b82f6; color:#3b82f6;">
+                        <i class="fa-solid fa-camera"></i> Ganti
+                    </button>
+                    <button type="button" class="btn btn-outline btn-xs" onclick="hapusFotoItem('${itemId}')" title="Hapus Foto" style="padding:1px 5px; font-size:0.65rem; border-color:#ef4444; color:#ef4444;">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+                ${badgeHtml}
+            </div>
+        `;
+    }
+
+    if (boxM) {
+        boxM.innerHTML = `
+            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+                <img src="${imgUrl}" style="width:48px; height:48px; object-fit:cover; border-radius:6px; border:2px solid #10b981; cursor:pointer;" onclick="window.open(this.src, '_blank')" title="Klik perbesar foto">
+                <div style="display:flex; gap:3px; margin-top:3px;">
+                    <button type="button" class="btn btn-outline btn-xs" onclick="openLiveCamera('${itemId}', '${safeNama}')" title="Ganti / Edit Foto" style="padding:1px 5px; font-size:0.65rem; border-color:#3b82f6; color:#3b82f6;">
+                        <i class="fa-solid fa-camera"></i> Ganti
+                    </button>
+                    <button type="button" class="btn btn-outline btn-xs" onclick="hapusFotoItem('${itemId}')" title="Hapus Foto" style="padding:1px 5px; font-size:0.65rem; border-color:#ef4444; color:#ef4444;">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+                ${badgeHtml}
+            </div>
+        `;
+    }
+};
+
+window.hapusFotoKegiatan = function() {
+    if (!confirm('Apakah Anda yakin ingin menghapus foto kegiatan apel gelar alat?')) return;
+
+    // 1. Set flag hapus menjadi 1
+    const h = document.getElementById('hapusFotoKegiatan');
+    if (h) h.value = '1';
+
+    // 2. Kosongkan file input
+    const inp = document.getElementById('fotoKegiatanInput');
+    if (inp) inp.value = '';
+
+    // 3. Sembunyikan preview, tampilkan tombol upload
+    const previewBox = document.getElementById('boxFotoKegiatanPreview');
+    const btnsBox = document.getElementById('boxFotoKegiatanBtns');
+    if (previewBox) previewBox.style.display = 'none';
+    if (btnsBox) btnsBox.style.display = 'flex';
+
+    const imgTag = document.getElementById('kegiatanImgTag');
+    if (imgTag) imgTag.src = '';
+};
+
+window.renderKegiatanPhotoPreview = function(imgUrl, badgeText) {
+    // 1. Reset flag hapus menjadi 0
+    const h = document.getElementById('hapusFotoKegiatan');
+    if (h) h.value = '0';
+
+    const previewBox = document.getElementById('boxFotoKegiatanPreview');
+    const btnsBox = document.getElementById('boxFotoKegiatanBtns');
+    const imgTag = document.getElementById('kegiatanImgTag');
+    const titleTag = document.getElementById('kegiatanTitle');
+
+    if (imgTag) imgTag.src = imgUrl;
+    if (titleTag) titleTag.innerHTML = `Foto Baru Dipilih ${badgeText ? `<span style="font-size:0.75rem; font-weight:normal; color:#047857;">(${badgeText})</span>` : ''}`;
+    if (previewBox) previewBox.style.display = 'flex';
+    if (btnsBox) btnsBox.style.display = 'none';
+};
+
+// ========================================
 // Init Signature Pad & Handlers
 // ========================================
 document.addEventListener('DOMContentLoaded', function() {
@@ -634,8 +816,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearBtn = document.getElementById('clearPetugas');
     const hiddenInput = document.getElementById('ttdPetugas');
     window.sigPad = new SimpleSignaturePad(canvas, clearBtn, hiddenInput);
-
-
 
     // ========================================
     // Cek & Tampilkan Autosave Draft Lokal
@@ -697,66 +877,28 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('input[type="file"][name^="foto_item_"]').forEach(input => {
         input.addEventListener('change', async function() {
             const itemId = this.id.replace('fotoInput_', '').replace('fotoInputM_', '');
-            const card = document.getElementById('card_' + itemId);
-            const row = document.getElementById('row_' + itemId);
             if (this.files && this.files[0]) {
                 const origFile = this.files[0];
                 const origSizeKb = Math.round(origFile.size / 1024);
                 const url = URL.createObjectURL(origFile);
 
-                [card, row].forEach(parent => {
-                    if (!parent) return;
-
-                    // Update / Buat Badge Status
-                    let badge = parent.querySelector('.compress-badge');
-                    if (!badge) {
-                        badge = document.createElement('div');
-                        badge.className = 'compress-badge';
-                        badge.style.cssText = 'font-size:0.68rem; color:#0369a1; background:#e0f2fe; padding:2px 6px; border-radius:4px; margin-top:3px; display:inline-block; font-weight:600;';
-                        parent.appendChild(badge);
-                    }
-                    badge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengoptimalkan...';
-
-                    // Update / Buat Thumbnail Preview
-                    let prevEl = parent.querySelector('.foto-preview');
-                    if (!prevEl) {
-                        prevEl = document.createElement('img');
-                        prevEl.className = 'foto-preview';
-                        prevEl.style.cssText = 'width:44px; height:44px; object-fit:cover; border-radius:6px; border:2px solid #10b981; margin-top:4px; cursor:pointer; display:block;';
-                        prevEl.title = 'Klik perbesar foto';
-                        prevEl.onclick = function() { window.open(this.src, '_blank'); };
-                        parent.appendChild(prevEl);
-                    }
-                    prevEl.src = url;
-
-                    // Update Tombol Kamera Menjadi Hijau Aktif
-                    const camBtn = parent.querySelector('.btn-foto-cam') || parent.querySelector('button[title*="Kamera"]');
-                    if (camBtn) {
-                        camBtn.style.background = '#10b981';
-                        camBtn.style.color = '#ffffff';
-                        camBtn.style.borderColor = '#10b981';
-                        camBtn.title = 'Foto Terambil - Klik untuk Mengulang';
-                        camBtn.innerHTML = '<i class="fa-solid fa-camera"></i> <i class="fa-solid fa-check" style="font-size:0.7rem; margin-left:2px;"></i>';
-                    }
-                });
+                renderItemPhotoPreview(itemId, url, '<i class="fa-solid fa-spinner fa-spin"></i> Mengoptimalkan...');
 
                 try {
                     const compressed = await window.ImageCompressor.compress(origFile, { maxDimension: 1280, quality: 0.8 });
                     const dt = new DataTransfer();
                     dt.items.add(compressed);
                     this.files = dt.files;
+
+                    // Sinkronkan ke input file pasangannya (desktop <-> mobile)
+                    const otherId = this.id.startsWith('fotoInputM_') ? 'fotoInput_' + itemId : 'fotoInputM_' + itemId;
+                    const otherInp = document.getElementById(otherId);
+                    if (otherInp) otherInp.files = dt.files;
+
                     const compSizeKb = Math.round(compressed.size / 1024);
-                    [card, row].forEach(parent => {
-                        if (!parent) return;
-                        const badge = parent.querySelector('.compress-badge');
-                        if (badge) badge.innerHTML = `<i class="fa-solid fa-circle-check" style="color:#10b981;"></i> ${origSizeKb}KB &rarr; ${compSizeKb}KB`;
-                    });
+                    renderItemPhotoPreview(itemId, url, `<i class="fa-solid fa-circle-check"></i> ${origSizeKb}KB &rarr; ${compSizeKb}KB`);
                 } catch(e) {
-                    [card, row].forEach(parent => {
-                        if (!parent) return;
-                        const badge = parent.querySelector('.compress-badge');
-                        if (badge) badge.innerHTML = `<i class="fa-solid fa-circle-check" style="color:#10b981;"></i> Foto siap upload`;
-                    });
+                    renderItemPhotoPreview(itemId, url, `<i class="fa-solid fa-circle-check"></i> Foto siap`);
                 }
             }
         });
@@ -771,17 +913,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (this.files && this.files[0]) {
                 const origFile = this.files[0];
                 const origSizeMb = (origFile.size / (1024*1024)).toFixed(1);
-                const wrap = document.getElementById('kegiatanPreviewWrap');
-                const img = document.getElementById('kegiatanPreviewImg');
-                const badge = document.getElementById('kegiatanCompressBadge');
-                
-                if (wrap && img) {
-                    img.src = URL.createObjectURL(origFile);
-                    wrap.style.display = 'block';
-                }
-                if (badge) {
-                    badge.innerHTML = '<span style="font-size:0.75rem; color:#0369a1; background:#e0f2fe; padding:2px 8px; border-radius:4px;"><i class="fa-solid fa-spinner fa-spin"></i> Mengoptimalkan...</span>';
-                }
+                const url = URL.createObjectURL(origFile);
+
+                renderKegiatanPhotoPreview(url, '<i class="fa-solid fa-spinner fa-spin"></i> Mengoptimalkan...');
 
                 try {
                     const compressed = await window.ImageCompressor.compress(origFile, { maxDimension: 1600, quality: 0.82 });
@@ -789,9 +923,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     dt.items.add(compressed);
                     this.files = dt.files;
                     const compSizeKb = Math.round(compressed.size / 1024);
-                    if (badge) badge.innerHTML = `<span style="font-size:0.75rem; color:#047857; background:#d1fae5; padding:2px 8px; border-radius:4px; font-weight:600;"><i class="fa-solid fa-circle-check"></i> Foto dioptimalkan (${origSizeMb}MB &rarr; ${compSizeKb}KB)</span>`;
+                    renderKegiatanPhotoPreview(url, `<i class="fa-solid fa-circle-check"></i> ${origSizeMb}MB &rarr; ${compSizeKb}KB`);
                 } catch(e) {
-                    if (badge) badge.innerHTML = `<span style="font-size:0.75rem; color:#047857; background:#d1fae5; padding:2px 8px; border-radius:4px; font-weight:600;"><i class="fa-solid fa-circle-check"></i> Foto siap diunggah</span>`;
+                    renderKegiatanPhotoPreview(url, `<i class="fa-solid fa-circle-check"></i> Foto siap diunggah`);
                 }
             }
         });
@@ -1136,19 +1270,15 @@ function acceptLiveSnapshot() {
                 inputKegiatan.dispatchEvent(new Event('change', { bubbles: true }));
             }
         } else {
-            const dt1 = new DataTransfer();
-            dt1.items.add(file);
+            const dt = new DataTransfer();
+            dt.items.add(file);
             const inpDesktop = document.getElementById('fotoInput_' + currentTargetId);
-            if (inpDesktop) {
-                inpDesktop.files = dt1.files;
-                inpDesktop.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-
-            const dt2 = new DataTransfer();
-            dt2.items.add(file);
             const inpMobile = document.getElementById('fotoInputM_' + currentTargetId);
-            if (inpMobile) {
-                inpMobile.files = dt2.files;
+            if (inpDesktop) {
+                inpDesktop.files = dt.files;
+                inpDesktop.dispatchEvent(new Event('change', { bubbles: true }));
+            } else if (inpMobile) {
+                inpMobile.files = dt.files;
                 inpMobile.dispatchEvent(new Event('change', { bubbles: true }));
             }
         }

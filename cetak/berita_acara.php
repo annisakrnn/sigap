@@ -61,6 +61,31 @@ $kondisi_label_print = [
     'hilang'      => 'HILANG',
     'tidak_ada'   => 'TDK ADA',
 ];
+
+// 1. Siapkan Foto Kegiatan Apel (Langsung dari MySQL BLOB -> Base64 agar instan & tanpa file disk)
+$foto_kegiatan_src = null;
+if (!empty($header['foto_kegiatan'])) {
+    $mime_type = !empty($header['foto_kegiatan_mime']) ? $header['foto_kegiatan_mime'] : 'image/jpeg';
+    if (strlen($header['foto_kegiatan']) > 255 || !preg_match('/^[a-zA-Z0-9_\-\.]+\.(jpg|jpeg|png|webp)$/i', $header['foto_kegiatan'])) {
+        $foto_kegiatan_src = 'data:' . $mime_type . ';base64,' . base64_encode($header['foto_kegiatan']);
+    } else {
+        $f_path = __DIR__ . '/../uploads/foto_kegiatan/' . $header['foto_kegiatan'];
+        if (file_exists($f_path)) {
+            $bytes = @file_get_contents($f_path);
+            if ($bytes !== false) {
+                $foto_kegiatan_src = 'data:' . $mime_type . ';base64,' . base64_encode($bytes);
+            }
+        }
+    }
+}
+
+// 2. Kumpulkan Item dengan Foto Temuan
+$foto_temuan_list = [];
+foreach ($details as $d) {
+    if (!empty($d['foto_temuan'])) {
+        $foto_temuan_list[] = $d;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -139,10 +164,16 @@ $kondisi_label_print = [
         .no-print a { background: #10b981; color: white; padding: 8px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; }
         .no-print .btn-back { background: rgba(255,255,255,0.15); margin-right: 8px; }
 
+        /* DOKUMENTASI FOTO SECTION */
+        .foto-section { margin-top: 10px; margin-bottom: 8px; border: 1.5px solid #000; padding: 8px 10px; background: #fff; }
+        .foto-grid { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
+        .foto-card { border: 1px solid #000; padding: 6px; background: #fbfbfb; width: 220px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
+
         @media print {
             body { background: white; }
-            .page { box-shadow: none; margin: 0; padding: 12mm 10mm; width: 100%; }
+            .page { box-shadow: none; margin: 0; padding: 10mm 10mm; width: 100%; }
             .no-print { display: none !important; }
+            .avoid-break, .ttd-section, .foto-section, .foto-card, tr { page-break-inside: avoid; }
         }
     </style>
 </head>
@@ -215,18 +246,19 @@ $kondisi_label_print = [
     <table class="main-table">
         <thead>
             <tr>
-                <th style="width:28px;">No</th>
+                <th style="width:26px;">No</th>
                 <th>Nama Barang / Alat Kerja & APD</th>
-                <th style="width:60px;">Standar</th>
-                <th style="width:55px;">Realisasi</th>
-                <th style="width:55px;">Kondisi</th>
-                <th>Keterangan</th>
+                <th style="width:105px;">Dokumentasi Alat</th>
+                <th style="width:55px;">Standar</th>
+                <th style="width:50px;">Realisasi</th>
+                <th style="width:52px;">Kondisi</th>
+                <th style="width:90px;">Keterangan</th>
             </tr>
         </thead>
         <tbody>
             <?php $no = 1; foreach ($details_by_cat as $cat_key => $cat_items): ?>
                 <tr class="cat-row">
-                    <td colspan="6" style="padding:3px 6px;">
+                    <td colspan="7" style="padding:3px 6px;">
                         <?= strtoupper(isset($kategori_labels[$cat_key]) ? $kategori_labels[$cat_key] : ucfirst($cat_key)) ?>
                     </td>
                 </tr>
@@ -234,6 +266,19 @@ $kondisi_label_print = [
                     <tr>
                         <td style="text-align:center;"><?= $no++ ?></td>
                         <td><?= htmlspecialchars($d['nama_barang_snapshot']) ?></td>
+                        <td style="text-align:center; padding:3px 4px; vertical-align:middle;">
+                            <?php if (!empty($d['foto_temuan'])): ?>
+                                <?php
+                                $item_thumb_mime = !empty($d['foto_temuan_mime']) ? $d['foto_temuan_mime'] : 'image/jpeg';
+                                $item_thumb_b64 = 'data:' . $item_thumb_mime . ';base64,' . base64_encode($d['foto_temuan']);
+                                ?>
+                                <a href="<?= $item_thumb_b64 ?>" target="_blank" title="Klik untuk melihat foto ukuran penuh" style="display:inline-block; text-decoration:none;">
+                                    <img src="<?= $item_thumb_b64 ?>" style="max-height:75px; max-width:98px; width:auto; height:auto; object-fit:contain; border-radius:3px; border:1px solid #333; display:block; margin:0 auto; background:#f8fafc;" alt="Foto Alat">
+                                </a>
+                            <?php else: ?>
+                                <span style="color:#aaa; font-size:8pt;">&mdash;</span>
+                            <?php endif; ?>
+                        </td>
                         <td style="text-align:center;"><?= $d['jumlah_standar'] ?> <?= htmlspecialchars($d['satuan']) ?></td>
                         <td style="text-align:center;font-weight:bold;<?= $d['jumlah_realisasi'] < $d['jumlah_standar'] ? 'color:#7b241c;' : '' ?>">
                             <?= $d['jumlah_realisasi'] ?>
@@ -245,7 +290,9 @@ $kondisi_label_print = [
                                 $ket = '';
                             }
                         ?>
-                        <td style="font-size:8.5pt;"><?= htmlspecialchars($ket) ?></td>
+                        <td style="font-size:8.5pt;">
+                            <?= htmlspecialchars($ket) ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
             <?php endforeach; ?>
@@ -260,6 +307,24 @@ $kondisi_label_print = [
         <?php if ($header['catatan_manajemen']): ?>
             <strong>Catatan Manajemen:</strong> <?= nl2br(htmlspecialchars($header['catatan_manajemen'])) ?>
         <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
+    <!-- DOKUMENTASI FOTO APEL GELAR PASUKAN & PERALATAN -->
+    <?php if (!empty($foto_kegiatan_src)): ?>
+    <div class="foto-section avoid-break" style="margin-top:8px; margin-bottom:8px; border:1.5px solid #000; padding:8px 10px; background:#fff;">
+        <div style="font-weight:bold; font-size:9pt; text-transform:uppercase; border-bottom:1.5px solid #000; padding-bottom:3px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <span>DOKUMENTASI FOTO APEL GELAR PASUKAN & PERALATAN</span>
+            <span style="font-weight:normal; font-size:7.5pt; color:#444;">Dokumentasi Pelaksanaan Lapangan</span>
+        </div>
+        <div style="text-align:center;">
+            <a href="<?= $foto_kegiatan_src ?>" target="_blank" style="display:inline-block; text-decoration:none;">
+                <img src="<?= $foto_kegiatan_src ?>" style="max-height:160px; max-width:100%; object-fit:contain; border:1px solid #ddd; border-radius:3px; display:block; margin:0 auto;" alt="Foto Apel">
+            </a>
+            <div style="font-size:7.5pt; color:#475569; margin-top:3px;">
+                Dokumentasi apel kesiapan personel, armada, dan peralatan operasional regu
+            </div>
+        </div>
     </div>
     <?php endif; ?>
 

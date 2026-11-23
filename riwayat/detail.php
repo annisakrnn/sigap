@@ -133,6 +133,16 @@ require_once __DIR__ . '/../includes/header.php';
                 <tr><td style="color:var(--text-muted);padding:4px 0;">Regu / Armada</td><td><?= htmlspecialchars($header['nama_regu']) ?></td></tr>
                 <tr><td style="color:var(--text-muted);padding:4px 0;">Kendaraan</td><td><?= htmlspecialchars(isset($header['kendaraan']) ? $header['kendaraan'] : '-') ?></td></tr>
                 <tr><td style="color:var(--text-muted);padding:4px 0;">Plat Nomor (Nopol)</td><td><strong><?= htmlspecialchars(isset($header['nopol']) ? $header['nopol'] : '-') ?></strong></td></tr>
+                <?php if (!empty($header['foto_kegiatan'])): ?>
+                    <tr>
+                        <td style="color:var(--text-muted);padding:4px 0;vertical-align:top;">Foto Apel Regu</td>
+                        <td>
+                            <a href="<?= base_url('foto/kegiatan.php?id=' . intval($header['id'])) ?>" target="_blank" style="display:inline-block; border-radius:6px; overflow:hidden; border:1px solid #cbd5e1;">
+                                <img src="<?= base_url('foto/kegiatan.php?id=' . intval($header['id'])) ?>" style="max-height:55px; display:block; object-fit:cover;" title="Klik untuk memperbesar Foto Apel Regu">
+                            </a>
+                        </td>
+                    </tr>
+                <?php endif; ?>
             </table>
         </div>
         <div>
@@ -181,7 +191,7 @@ require_once __DIR__ . '/../includes/header.php';
                             <th width="80px" style="text-align:center;">Realisasi</th>
                             <th width="110px">Kondisi</th>
                             <th>Keterangan</th>
-                            <th width="60px">Foto Temuan</th>
+                            <th width="80px">Foto Temuan</th>
                             <th width="140px">Status Tindak Lanjut</th>
                         </tr>
                     </thead>
@@ -209,7 +219,7 @@ require_once __DIR__ . '/../includes/header.php';
                                     <?php if (!empty($d['foto_temuan'])): ?>
                                         <a href="<?= base_url('foto/temuan.php?id=' . intval($d['id'])) ?>" target="_blank">
                                             <img src="<?= base_url('foto/temuan.php?id=' . intval($d['id'])) ?>"
-                                                style="width:40px;height:40px;object-fit:cover;border-radius:4px;border:2px solid #ef4444;" title="Lihat Foto Temuan">
+                                                style="width:52px;height:52px;object-fit:cover;border-radius:6px;border:2px solid #ef4444;box-shadow:0 2px 4px rgba(0,0,0,0.1);" title="Klik untuk melihat Foto Temuan">
                                         </a>
                                     <?php else: ?>
                                         <span style="color:var(--text-muted);">–</span>
