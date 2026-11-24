@@ -4,11 +4,7 @@
  * Bisa dijalankan via Browser (http://localhost/sigap/setup.php) atau CLI (php setup.php)
  */
 
-define('DB_HOST', '127.0.0.1');
-define('DB_PORT', '3306');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'db_gelar_alat');
+require_once __DIR__ . '/config/database.php';
 
 $is_cli = (php_sapi_name() === 'cli');
 
@@ -42,21 +38,26 @@ function output_msg($msg, $type = 'info') {
 <?php
 
 try {
-    // 1. Hubungkan ke Server MySQL tanpa nama database
-    $pdo_server = new PDO("mysql:host=" . DB_HOST . ";port=" . DB_PORT, DB_USER, DB_PASS, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
-    output_msg("Berhasil terhubung ke MySQL Server pada " . DB_HOST . ":" . DB_PORT, 'success');
-
-    // 2. Buat Database jika belum ada
-    $pdo_server->exec("CREATE DATABASE IF NOT EXISTS " . DB_NAME . " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
-    output_msg("Database <strong>" . DB_NAME . "</strong> siap digunakan.", 'success');
-
-    // 3. Hubungkan ke database target
-    $pdo = new PDO("mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4", DB_USER, DB_PASS, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-    ]);
+    // 1. Hubungkan langsung ke database
+    $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+    try {
+        $pdo = new PDO($dsn, DB_USER, DB_PASS, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+        ]);
+        output_msg("Berhasil terhubung ke database <strong>" . DB_NAME . "</strong> pada " . DB_HOST . ":" . DB_PORT, 'success');
+    } catch (PDOException $ex) {
+        // Fallback untuk server lokal root jika database belum dibuat
+        $pdo_server = new PDO("mysql:host=" . DB_HOST . ";port=" . DB_PORT, DB_USER, DB_PASS, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+        ]);
+        $pdo_server->exec("CREATE DATABASE IF NOT EXISTS `" . DB_NAME . "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
+        $pdo = new PDO($dsn, DB_USER, DB_PASS, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+        ]);
+        output_msg("Database <strong>" . DB_NAME . "</strong> berhasil dibuat.", 'success');
+    }
 
     // 4. Buat Tabel-tabel
     $schema_sql = file_get_contents(__DIR__ . '/database/schema.sql');

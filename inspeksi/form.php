@@ -3,6 +3,12 @@
  * Form Checklist Gelar Alat - Dinamis per Jenis Pekerjaan
  * SIGAP
  */
+
+// Aktifkan tampilan error untuk mempermudah diagnosa masalah di server
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED);
+
 require_once __DIR__ . '/../includes/auth_check.php';
 
 $pdo = get_db_connection();
@@ -16,27 +22,37 @@ $edit_header = null;
 $existing_details_map = [];
 
 if ($edit_id > 0) {
-    $stmt_edit = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id LIMIT 1");
-    $stmt_edit->execute([':id' => $edit_id]);
-    $edit_header = $stmt_edit->fetch();
+    try {
+        $stmt_edit = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id LIMIT 1");
+        $stmt_edit->execute([':id' => $edit_id]);
+        $edit_header = $stmt_edit->fetch();
 
-    if (!$edit_header) {
-        set_flash('error', "Dokumen tidak ditemukan atau Anda tidak memiliki akses ke dokumen ini.");
-        header("Location: index.php"); exit;
-    }
+        if (!$edit_header) {
+            set_flash('error', "Dokumen tidak ditemukan atau Anda tidak memiliki akses ke dokumen ini.");
+            header("Location: index.php"); exit;
+        }
 
-    if (!in_array($edit_header['status'], ['draft', 'rejected', 'submitted', 'approved'])) {
-        set_flash('warning', "Dokumen tidak ditemukan.");
-        header("Location: index.php"); exit;
-    }
+        if (!in_array($edit_header['status'], ['draft', 'rejected', 'submitted', 'approved'])) {
+            set_flash('warning', "Dokumen tidak ditemukan.");
+            header("Location: index.php"); exit;
+        }
 
-    $jenis_pekerjaan = $edit_header['jenis_pekerjaan'];
-    $regu_id = (int)$edit_header['regu_id'];
+        $jenis_pekerjaan = $edit_header['jenis_pekerjaan'];
+        $regu_id = (int)$edit_header['regu_id'];
 
-    $stmt_d_ex = $pdo->prepare("SELECT * FROM gelar_alat_detail WHERE gelar_alat_id = :id");
-    $stmt_d_ex->execute([':id' => $edit_id]);
-    foreach ($stmt_d_ex->fetchAll() as $d_row) {
-        $existing_details_map[$d_row['master_barang_id']] = $d_row;
+        $stmt_d_ex = $pdo->prepare("SELECT * FROM gelar_alat_detail WHERE gelar_alat_id = :id");
+        $stmt_d_ex->execute([':id' => $edit_id]);
+        foreach ($stmt_d_ex->fetchAll() as $d_row) {
+            $existing_details_map[$d_row['master_barang_id']] = $d_row;
+        }
+    } catch (PDOException $e) {
+        die("<div style='font-family:sans-serif; max-width:650px; margin:50px auto; padding:24px; border-radius:10px; background:#fff; border:1px solid #fecaca; box-shadow:0 10px 25px rgba(0,0,0,0.08); color:#1e293b;'>
+            <h2 style='margin:0 0 12px; font-size:1.2rem; color:#991b1b;'>Gagal Membaca Dokumen Revisi (ID: {$edit_id})</h2>
+            <div style='background:#f8fafc; padding:12px; border-radius:6px; border-left:4px solid #ef4444; font-family:monospace; font-size:0.85rem; color:#b91c1c; word-break:break-all; margin-bottom:16px;'>
+                " . htmlspecialchars($e->getMessage()) . "
+            </div>
+            <a href='index.php' style='display:inline-block; padding:8px 16px; background:#2563eb; color:#fff; text-decoration:none; border-radius:6px; font-size:0.85rem; font-weight:600;'>&larr; Kembali ke Beranda</a>
+        </div>");
     }
 } else {
     // Validasi parameter GET biasa
@@ -50,72 +66,105 @@ if ($edit_id > 0) {
     }
 }
 
-// Ambil data regu
-$stmt_regu = $pdo->prepare("SELECT * FROM regu WHERE id = :id AND jenis_pekerjaan = :jenis LIMIT 1");
-$stmt_regu->execute([':id' => $regu_id, ':jenis' => $jenis_pekerjaan]);
-$regu = $stmt_regu->fetch();
-if (!$regu) {
-    set_flash('error', "Data regu tidak ditemukan.");
-    header("Location: index.php"); exit;
-}
+try {
+    // Ambil data regu
+    $stmt_regu = $pdo->prepare("SELECT * FROM regu WHERE id = :id AND jenis_pekerjaan = :jenis LIMIT 1");
+    $stmt_regu->execute([':id' => $regu_id, ':jenis' => $jenis_pekerjaan]);
+    $regu = $stmt_regu->fetch();
+    if (!$regu) {
+        set_flash('error', "Data regu tidak ditemukan. Pastikan data regu sudah diimpor ke database.");
+        header("Location: index.php"); exit;
+    }
 
-// Deteksi tipe armada/regu (misal: 'roda_2', 'roda_3', 'yandal_mobil', 'ulc_motor', atau 'all')
-$detected_regu_tipe = isset($regu['regu_tipe']) && !empty($regu['regu_tipe']) && $regu['regu_tipe'] !== 'all' ? $regu['regu_tipe'] : 'all';
+    // Deteksi tipe armada/regu (misal: 'roda_2', 'roda_3', 'yandal_mobil', 'ulc_motor', atau 'all')
+    $detected_regu_tipe = isset($regu['regu_tipe']) && !empty($regu['regu_tipe']) && $regu['regu_tipe'] !== 'all' ? $regu['regu_tipe'] : 'all';
 
-if ($detected_regu_tipe === 'all') {
-    $regu_info_str = strtolower(($regu['nama_regu'] ?? '') . ' ' . ($regu['kendaraan'] ?? '') . ' ' . ($regu['keterangan'] ?? ''));
-    if ($jenis_pekerjaan === 'sr_app') {
-        if (strpos($regu_info_str, 'roda 2') !== false || strpos($regu_info_str, 'roda_2') !== false || strpos($regu_info_str, 'r2') !== false) {
-            $detected_regu_tipe = 'roda_2';
-        } elseif (strpos($regu_info_str, 'roda 3') !== false || strpos($regu_info_str, 'roda_3') !== false || strpos($regu_info_str, 'r3') !== false) {
-            $detected_regu_tipe = 'roda_3';
-        }
-    } elseif ($jenis_pekerjaan === 'yandal') {
-        if (strpos($regu_info_str, 'ulc') !== false || strpos($regu_info_str, 'verza') !== false || strpos($regu_info_str, 'motor') !== false) {
-            $detected_regu_tipe = 'ulc_motor';
-        } else {
-            $detected_regu_tipe = 'yandal_mobil';
-        }
-    } elseif ($jenis_pekerjaan === 'har') {
-        if (strpos($regu_info_str, 'carry') !== false || strpos($regu_info_str, 'har b') !== false || strpos($regu_info_str, '8255') !== false) {
-            $detected_regu_tipe = 'har_carry';
-        } else {
-            $detected_regu_tipe = 'har_truk';
+    if ($detected_regu_tipe === 'all') {
+        $regu_nama = isset($regu['nama_regu']) ? $regu['nama_regu'] : '';
+        $regu_kend = isset($regu['kendaraan']) ? $regu['kendaraan'] : '';
+        $regu_ket  = isset($regu['keterangan']) ? $regu['keterangan'] : '';
+        $regu_info_str = strtolower($regu_nama . ' ' . $regu_kend . ' ' . $regu_ket);
+        if ($jenis_pekerjaan === 'sr_app') {
+            if (strpos($regu_info_str, 'roda 2') !== false || strpos($regu_info_str, 'roda_2') !== false || strpos($regu_info_str, 'r2') !== false) {
+                $detected_regu_tipe = 'roda_2';
+            } elseif (strpos($regu_info_str, 'roda 3') !== false || strpos($regu_info_str, 'roda_3') !== false || strpos($regu_info_str, 'r3') !== false) {
+                $detected_regu_tipe = 'roda_3';
+            }
+        } elseif ($jenis_pekerjaan === 'yandal') {
+            if (strpos($regu_info_str, 'ulc') !== false || strpos($regu_info_str, 'verza') !== false || strpos($regu_info_str, 'motor') !== false) {
+                $detected_regu_tipe = 'ulc_motor';
+            } else {
+                $detected_regu_tipe = 'yandal_mobil';
+            }
+        } elseif ($jenis_pekerjaan === 'har') {
+            if (strpos($regu_info_str, 'carry') !== false || strpos($regu_info_str, 'har b') !== false || strpos($regu_info_str, '8255') !== false) {
+                $detected_regu_tipe = 'har_carry';
+            } else {
+                $detected_regu_tipe = 'har_truk';
+            }
         }
     }
-}
 
-// Ambil template checklist items (berurutan berdasarkan kategori & urutan)
-if ($detected_regu_tipe !== 'all') {
-    $stmt_items = $pdo->prepare("
-        SELECT tci.*, mb.nama_barang, mb.kategori, mb.satuan_default, mb.gambar_referensi
-        FROM template_checklist_item tci
-        JOIN master_barang mb ON tci.master_barang_id = mb.id
-        WHERE tci.jenis_pekerjaan = :jenis
-          AND tci.regu_tipe IN ('all', :regu_tipe)
-        ORDER BY mb.kategori, tci.urutan
-    ");
-    $stmt_items->execute([':jenis' => $jenis_pekerjaan, ':regu_tipe' => $detected_regu_tipe]);
-} else {
-    $stmt_items = $pdo->prepare("
-        SELECT tci.*, mb.nama_barang, mb.kategori, mb.satuan_default, mb.gambar_referensi
-        FROM template_checklist_item tci
-        JOIN master_barang mb ON tci.master_barang_id = mb.id
-        WHERE tci.jenis_pekerjaan = :jenis
-        ORDER BY mb.kategori, tci.urutan
-    ");
-    $stmt_items->execute([':jenis' => $jenis_pekerjaan]);
-}
-$all_items = $stmt_items->fetchAll();
+    // Ambil template checklist items (berurutan berdasarkan kategori & urutan)
+    $has_regu_tipe_col = false;
+    $has_urutan_col = false;
+    try {
+        $cols_stmt = $pdo->query("SHOW COLUMNS FROM template_checklist_item");
+        if ($cols_stmt) {
+            $existing_cols = $cols_stmt->fetchAll(PDO::FETCH_COLUMN);
+            $has_regu_tipe_col = in_array('regu_tipe', $existing_cols);
+            $has_urutan_col = in_array('urutan', $existing_cols);
+        }
+    } catch (Exception $e) {}
 
-$items_by_kategori = [];
-foreach ($all_items as $item) {
-    $items_by_kategori[$item['kategori']][] = $item;
-}
+    $order_clause = $has_urutan_col ? "ORDER BY mb.kategori, tci.urutan" : "ORDER BY mb.kategori, tci.id ASC";
 
-// Ambil data referensi personil untuk datalist
-$stmt_mgr = $pdo->query("SELECT id, nama_lengkap, jabatan FROM users ORDER BY nama_lengkap ASC");
-$manager_list = $stmt_mgr ? $stmt_mgr->fetchAll() : [];
+    if ($has_regu_tipe_col && $detected_regu_tipe !== 'all') {
+        $stmt_items = $pdo->prepare("
+            SELECT tci.*, mb.nama_barang, mb.kategori, mb.satuan_default, mb.gambar_referensi
+            FROM template_checklist_item tci
+            JOIN master_barang mb ON tci.master_barang_id = mb.id
+            WHERE tci.jenis_pekerjaan = :jenis
+              AND tci.regu_tipe IN ('all', :regu_tipe)
+            {$order_clause}
+        ");
+        $stmt_items->execute([':jenis' => $jenis_pekerjaan, ':regu_tipe' => $detected_regu_tipe]);
+    } else {
+        $stmt_items = $pdo->prepare("
+            SELECT tci.*, mb.nama_barang, mb.kategori, mb.satuan_default, mb.gambar_referensi
+            FROM template_checklist_item tci
+            JOIN master_barang mb ON tci.master_barang_id = mb.id
+            WHERE tci.jenis_pekerjaan = :jenis
+            {$order_clause}
+        ");
+        $stmt_items->execute([':jenis' => $jenis_pekerjaan]);
+    }
+    $all_items = $stmt_items->fetchAll();
+
+    $items_by_kategori = [];
+    foreach ($all_items as $item) {
+        $items_by_kategori[$item['kategori']][] = $item;
+    }
+
+    // Ambil data referensi personil untuk datalist
+    $stmt_mgr = $pdo->query("SELECT id, nama_lengkap, jabatan FROM users ORDER BY nama_lengkap ASC");
+    $manager_list = $stmt_mgr ? $stmt_mgr->fetchAll() : [];
+} catch (PDOException $e) {
+    die("<div style='font-family:sans-serif; max-width:650px; margin:50px auto; padding:24px; border-radius:10px; background:#fff; border:1px solid #fecaca; box-shadow:0 10px 25px rgba(0,0,0,0.08); color:#1e293b;'>
+        <div style='display:flex; align-items:center; gap:12px; margin-bottom:12px;'>
+            <div style='width:40px; height:40px; border-radius:50%; background:#fee2e2; color:#dc2626; display:flex; align-items:center; justify-content:center; font-size:1.25rem; font-weight:bold;'>!</div>
+            <h2 style='margin:0; font-size:1.2rem; color:#991b1b;'>Gagal Membuka Formulir Gelar Alat</h2>
+        </div>
+        <p style='font-size:0.9rem; color:#475569; margin-bottom:12px;'>Terjadi kendala saat membaca data dari database MySQL:</p>
+        <div style='background:#f8fafc; padding:12px; border-radius:6px; border-left:4px solid #ef4444; font-family:monospace; font-size:0.85rem; color:#b91c1c; word-break:break-all; margin-bottom:16px;'>
+            " . htmlspecialchars($e->getMessage()) . "
+        </div>
+        <p style='font-size:0.85rem; color:#475569; line-height:1.5;'><strong>Penyebab:</strong> Tabel atau data di database hosting belum diimpor lengkap. Silakan impor file <code>database/sigap_hosting.sql</code> ke database cPanel melalui phpMyAdmin.</p>
+        <div style='margin-top:20px; display:flex; gap:10px;'>
+            <a href='index.php' style='display:inline-block; padding:8px 16px; background:#2563eb; color:#fff; text-decoration:none; border-radius:6px; font-size:0.85rem; font-weight:600;'>&larr; Kembali ke Beranda</a>
+        </div>
+    </div>");
+}
 
 $kategori_labels = [
     'alat_kerja'          => ['label' => 'Peralatan Kerja', 'icon' => 'fa-toolbox', 'color' => '#0072ce'],
@@ -366,7 +415,7 @@ require_once __DIR__ . '/../includes/header.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <input type="text" name="items[<?= $item['id'] ?>][keterangan]" class="form-control ket-input" placeholder="Opsional" value="<?= htmlspecialchars($keterangan_val ?? '') ?>" style="font-size:0.8rem;padding:5px 8px;">
+                                    <input type="text" name="items[<?= $item['id'] ?>][keterangan]" class="form-control ket-input" placeholder="Opsional" value="<?= htmlspecialchars(isset($keterangan_val) && $keterangan_val !== null ? $keterangan_val : '') ?>" style="font-size:0.8rem;padding:5px 8px;">
                                 </td>
                                 <td style="text-align:center; vertical-align:middle;">
                                     <input type="file" name="foto_item_<?= $item['id'] ?>" 
@@ -489,7 +538,7 @@ require_once __DIR__ . '/../includes/header.php';
                         <div id="ketWrapper_<?= $item['id'] ?>" style="display:<?= $need_ket ? 'block' : 'none' ?>;">
                             <input type="text" name="items[<?= $item['id'] ?>][keterangan]"
                                 class="form-control ket-input" placeholder="Keterangan kerusakan / tindak lanjut..."
-                                value="<?= htmlspecialchars($keterangan_val ?? '') ?>"
+                                value="<?= htmlspecialchars(isset($keterangan_val) && $keterangan_val !== null ? $keterangan_val : '') ?>"
                                 style="font-size:0.85rem;">
                         </div>
                     </div>

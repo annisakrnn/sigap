@@ -10,7 +10,7 @@ $pdo = get_db_connection();
 if (!$pdo) { header("Location: ../setup.php"); exit; }
 
 $user = get_logged_user();
-$id = $_GET['id'] ?? '';
+$id = isset($_GET['id']) ? $_GET['id'] : '';
 
 if (empty($id)) {
     die("ID tidak ditemukan.");

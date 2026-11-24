@@ -10,30 +10,28 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/../config/database.php';
 
-function base_url($path = '') {
-    static $base_dir = null;
-
-    if ($base_dir === null) {
-        // Hitung root project berdasarkan lokasi fisik file ini.
-        // File ini ada di: <project_root>/includes/auth_check.php
-        // Jadi project root = dirname(dirname(__FILE__))
-        $project_root = str_replace('\\', '/', realpath(__DIR__ . '/..'));
-        $doc_root     = str_replace('\\', '/', realpath(isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] : ''));
-
-        if ($doc_root && strpos($project_root, $doc_root) === 0) {
-            // Project berada di bawah document root → hitung sub-path relatif
-            $base_dir = substr($project_root, strlen($doc_root));
-        } else {
-            // Fallback: gunakan SCRIPT_NAME untuk menebak base path
-            $script = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
-            $base_dir = rtrim(dirname(dirname($script)), '/');
+if (!function_exists('base_url')) {
+    function base_url($path = '') {
+        if (defined('BASE_URL')) {
+            return rtrim(BASE_URL, '/') . ($path ? '/' . ltrim($path, '/') : '');
         }
 
-        // Pastikan tidak ada trailing slash
-        $base_dir = rtrim($base_dir, '/');
-    }
+        static $base_dir = null;
+        if ($base_dir === null) {
+            $project_root = str_replace('\\', '/', realpath(__DIR__ . '/..'));
+            $doc_root     = str_replace('\\', '/', realpath(isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] : ''));
 
-    return $base_dir . '/' . ltrim($path, '/');
+            if ($doc_root && strpos($project_root, $doc_root) === 0) {
+                $base_dir = substr($project_root, strlen($doc_root));
+            } else {
+                $script = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
+                $base_dir = rtrim(dirname(dirname($script)), '/');
+            }
+            $base_dir = rtrim($base_dir, '/');
+        }
+
+        return $base_dir . '/' . ltrim($path, '/');
+    }
 }
 
 function is_logged_in() {
