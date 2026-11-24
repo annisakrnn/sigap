@@ -22,6 +22,7 @@ $petugas_id = $user ? $user['id'] : null;
 if (!$petugas_id) {
     $stmt_def = $pdo->query("SELECT id FROM users WHERE username = 'petugas_lapangan' OR role = 'petugas' ORDER BY (username = 'petugas_lapangan') DESC, id ASC LIMIT 1");
     $petugas_id = $stmt_def->fetchColumn();
+    $stmt_def->closeCursor();
     if (!$petugas_id) {
         $pdo->prepare("INSERT INTO users (username, password_hash, nama_lengkap, role, jabatan) VALUES ('petugas_lapangan', :pw, 'Petugas Lapangan', 'petugas', 'Pelaksana Lapangan')")
             ->execute([':pw' => password_hash('123456', PASSWORD_BCRYPT)]);
@@ -45,6 +46,7 @@ if ($edit_id > 0) {
     $stmt_cek = $pdo->prepare("SELECT * FROM gelar_alat_header WHERE id = :id LIMIT 1");
     $stmt_cek->execute([':id' => $edit_id]);
     $existing_header = $stmt_cek->fetch();
+    $stmt_cek->closeCursor();
     if (!$existing_header) {
         set_flash('error', "Dokumen tidak ditemukan.");
         header("Location: index.php"); exit;
@@ -161,6 +163,7 @@ try {
         $stmt_header->bindValue(':ttd_mgr', $ttd_manager);
         $stmt_header->bindValue(':id', $header_id, PDO::PARAM_INT);
         $stmt_header->execute();
+        $stmt_header->closeCursor();
 
         // Ambil dan simpan cache foto temuan lama sebelum detail dihapus (agar tidak hilang saat edit)
         $existing_photos_map = [];
@@ -170,6 +173,7 @@ try {
             $existing_photos_map[$old_p['id']] = $old_p;
             $existing_photos_map['b_' . $old_p['master_barang_id']] = $old_p;
         }
+        $stmt_get_photos->closeCursor();
 
         // Hapus detail lama untuk di-refresh
         $pdo->prepare("DELETE FROM gelar_alat_detail WHERE gelar_alat_id = :id")->execute([':id' => $header_id]);
@@ -215,6 +219,7 @@ try {
         $stmt_header->bindValue(':petugas_id', $petugas_id, PDO::PARAM_INT);
         $stmt_header->execute();
         $header_id = $pdo->lastInsertId();
+        $stmt_header->closeCursor();
     }
 
     // 3. Simpan detail items
@@ -228,16 +233,21 @@ try {
              :std, :realisasi, :satuan, :kondisi, :ket, :foto, :foto_mime)
     ");
 
-    // Ambil nama barang dari DB untuk snapshot
-    $stmt_nama = $pdo->prepare("SELECT nama_barang, kategori FROM master_barang WHERE id = :id LIMIT 1");
+    // Ambil cache semua master_barang ke dalam associative array (mencegah error unbuffered query PDO 2014)
+    $master_barang_map = [];
+    $stmt_mb = $pdo->query("SELECT id, nama_barang, kategori FROM master_barang");
+    if ($stmt_mb) {
+        foreach ($stmt_mb->fetchAll(PDO::FETCH_ASSOC) as $mb_row) {
+            $master_barang_map[$mb_row['id']] = $mb_row;
+        }
+        $stmt_mb->closeCursor();
+    }
 
     foreach ($items as $item_tpl_id => $item_data) {
         $barang_id = intval(isset($item_data['barang_id']) ? $item_data['barang_id'] : 0);
-        if (!$barang_id) continue;
+        if (!$barang_id || !isset($master_barang_map[$barang_id])) continue;
 
-        $stmt_nama->execute([':id' => $barang_id]);
-        $barang = $stmt_nama->fetch();
-        if (!$barang) continue;
+        $barang = $master_barang_map[$barang_id];
 
         // Foto temuan item — simpan binary langsung ke MySQL (MEDIUMBLOB)
         $foto_temuan_blob = null;
@@ -282,6 +292,7 @@ try {
         $stmt_detail->bindValue(':foto', $foto_temuan_blob, $foto_temuan_blob !== null ? PDO::PARAM_LOB : PDO::PARAM_NULL);
         $stmt_detail->bindValue(':foto_mime', $foto_temuan_mime);
         $stmt_detail->execute();
+        $stmt_detail->closeCursor();
     }
 
     // Notifikasi offline (tidak perlu push notif ke manajemen karena approval offline)
